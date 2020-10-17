@@ -196,8 +196,8 @@ char *nano_read_command(char *line)
 		{
 			ERROR(1, "[ERROR]Error reading commands\n");
 		}
-		
 	}
+	line[strcspn(line, "\n")] = 0;
 
 	return line;
 }
@@ -210,20 +210,18 @@ char *nano_read_command(char *line)
 void nano_loop(void)
 {
 	char *lineptr;
-	char *line = NULL;
 	char **args;
+
 	do
 	{
 
+		char *line = NULL;
+
 		lineptr = nano_read_command(line);
 
-		if (lineptr == NULL)
+		if (lineptr[0] != 0)
 		{
 
-			//NOTHING
-		}
-		else
-		{
 			int res = nano_verify_char(lineptr);
 			if (res == -1)
 			{
@@ -238,9 +236,8 @@ void nano_loop(void)
 				nano_exec_commands(args);
 			}
 		}
-		free(lineptr);
+
 		free(line);
-		free(args);
 
 	} while (status == 0);
 }
