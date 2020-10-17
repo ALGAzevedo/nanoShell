@@ -1,0 +1,16 @@
+HELP FOR NANOSHELL
+
+# Use simple commands without metachars and pipes and ' "
+
+    Ex: ps aux -l
+
+# Use bye command to exit nanoShell
+
+
+
+
+Authors:
+
+André Azevedo - 2182634
+Alexandre Santos - 2181593
+
