@@ -34,11 +34,60 @@ int status = 0; // Status for terminating nanoShell
 
 /*Function Declaration*/
 char *nano_read_command(char *line);
-char **nano_split_lineptr(char *lineptr, char **tokens, int buffersize);
+char **nano_split_lineptr(char *lineptr);
 void nano_verify_pointer(char **ptr);
 void nano_exec_commands(char **tokens);
 int nano_verify_char(char *lineptr);
 void nano_verify_terminate(char **args);
+int nano_verify_redirect(char **args, char **outputfile);
+
+
+/**
+ * Function to verify if its a redirect command
+ * 
+ */
+int nano_verify_redirect(char **args, char **outputfile)
+{
+
+	for (int i = 0; args[i] != NULL; i++)
+	{
+		if ((strcmp(args[i], ">") == 0))
+		{
+			*outputfile = args[i + 1];
+
+			args[i] = NULL;
+
+			return 1;
+		}
+		if ((strcmp(args[i], ">>") == 0))
+		{
+			*outputfile = args[i + 1];
+
+			args[i] = NULL;
+
+			return 2;
+		}
+		if ((strcmp(args[i], "2>") == 0))
+		{
+			*outputfile = args[i + 1];
+
+			args[i] = NULL;
+
+			return 3;
+		}
+		if ((strcmp(args[i], "2>>") == 0))
+		{
+
+			*outputfile = args[i + 1];
+
+			args[i] = NULL;
+
+			return 4;
+		}
+	}
+
+	return -1;
+}
 
 /**
  * Function to verify termination of nanoShell
@@ -73,7 +122,9 @@ int nano_verify_char(char *lineptr)
 	size_t i;
 
 	int verify[] = {33, 34, 35, 36, 38, 39, 40, 41, 42, 44, 58, 59, 60, 61, 63, 64, 91, 92, 93, 94, 96, 123, 124, 126};
+
 	size_t verlength = sizeof(verify) / sizeof(verify[0]);
+
 	for (i = 0; i < length; i++)
 	{
 		for (size_t j = 0; j < verlength; j++)
@@ -136,10 +187,12 @@ void nano_verify_pointer(char **ptr)
  * 
  * @return Function returns a pointer to a string array with the commands
  */
-char **nano_split_lineptr(char *lineptr, char **tokens, int buffersize)
+char **nano_split_lineptr(char *lineptr)
 {
 
 	char *token;
+	int buffersize = NANO_TOKENS_BUFSIZE;
+	char **tokens = malloc(buffersize * sizeof(char *));
 
 	int pos = 0;
 
@@ -148,7 +201,7 @@ char **nano_split_lineptr(char *lineptr, char **tokens, int buffersize)
 		ERROR(2, "[ERROR]Memory Allocation Failed\n");
 	}
 
-	token = strtok(lineptr, " \r\n");
+	token = strtok(lineptr, " ");
 	while (token != NULL)
 	{
 		tokens[pos] = token;
@@ -164,7 +217,7 @@ char **nano_split_lineptr(char *lineptr, char **tokens, int buffersize)
 				ERROR(2, "[ERROR]Memory Allocation Failed\n");
 			}
 		}
-		token = strtok(NULL, " \r\n");
+		token = strtok(NULL, " ");
 	}
 
 	tokens[pos] = NULL;
@@ -208,12 +261,12 @@ char *nano_read_command(char *line)
 void nano_loop(void)
 {
 	char *lineptr;
-	char **args;
 
 	do
 	{
 
 		char *line = NULL;
+		char **args;
 
 		lineptr = nano_read_command(line);
 
@@ -223,20 +276,62 @@ void nano_loop(void)
 			int res = nano_verify_char(lineptr);
 			if (res == -1)
 			{
-				printf("[ERROR] Wrong request ' %s", lineptr);
+				printf("[ERROR] Wrong request ' %s\n", lineptr);
 			}
 			else
 			{
-				int buffersize = NANO_TOKENS_BUFSIZE;
-				char **tokens = malloc(buffersize * sizeof(char *));
+				char *outputfile;
+				int result;
 
-				args = nano_split_lineptr(lineptr, tokens, buffersize);
-
-				free(tokens);
+				args = nano_split_lineptr(lineptr);
 
 				nano_verify_terminate(args);
 
-				nano_exec_commands(args);
+				pid_t pid = fork();
+				if (pid == -1)
+				{
+					ERROR(3, "Error executing fork().\n");
+				}
+				else if (pid == 0)
+				{
+					FILE *fp;
+
+					result = nano_verify_redirect(args, &outputfile);
+
+					switch (result)
+					{
+					case 1:
+						fp = freopen(outputfile, "w", stdout);
+						break;
+					case 2:
+						fp = freopen(outputfile, "a", stdout);
+						break;
+					case 3:
+						fp = freopen(outputfile, "w", stderr);
+						break;
+					case 4:
+						fp = freopen(outputfile, "a", stderr);
+						break;
+					default:
+						break;
+					}
+					if (fp == NULL)
+					{
+						printf("[ERROR]Error opening file\n");
+					}
+
+					nano_exec_commands(args);
+					if (fp != NULL)
+					{
+						fclose(fp);
+					}
+					exit(0);
+				}
+				else
+				{
+					wait(NULL);
+					free(args);
+				}
 			}
 		}
 
