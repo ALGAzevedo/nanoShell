@@ -40,8 +40,59 @@ void nano_exec_commands(char **tokens);
 int nano_verify_char(char *lineptr);
 void nano_verify_terminate(char **args);
 int nano_verify_redirect(char **args, char **outputfile);
+void nano_sig_handler(int sig, siginfo_t *siginfo, void *context);
 
 
+/**
+ * Function to handle the signals
+ * 
+ */
+void nano_sig_handler(int sig, siginfo_t *siginfo, void *context) 
+{
+	(void)context;
+	int aux;
+
+	/* Copia da variavel global errno */
+	aux = errno;
+
+	if (sig == SIGUSR1)
+	{
+
+	/* 	FILE *fileptr;
+		char *lineptr = NULL;
+		size_t n = 0;
+		ssize_t result;
+
+		fileptr = fopen(file, "rt");
+		if (fileptr == NULL)
+		{
+			ERROR(1, "Error opening for reading!\n");
+		}
+
+		while ((result = getline(&lineptr, &n, fileptr)) != -1)
+		{
+			printf("Found line with size: %zu : ", result);
+			printf("%s \n", lineptr);
+		}
+
+		free(lineptr);
+		fclose(fileptr); */
+
+		/* Restaura valor da variavel global errno */
+		errno = aux;
+		
+	}else if(sig == SIGUSR2){
+
+	}else if( sig == SIGINT){		
+		printf("[INFO] Received SIGINT from PID: %ld\n", (long)siginfo->si_pid);
+		printf("\n[INFO] nanoShell is terminating.\n");
+		
+		exit(0);
+	}
+
+	/* Restaura valor da variavel global errno */
+	errno = aux;
+}
 /**
  * Function to verify if its a redirect command
  * 
@@ -363,6 +414,37 @@ int main(int argc, char *argv[])
 		printf("#Use bye command to exit nanoShell\n\n\nAuthors:\n");
 		printf("André Azevedo - 2182634\nAlexandre Santos - 2181593\n\n");
 	}
+
+
+	//SIGNAL HANDLER
+	
+	struct sigaction act;
+
+	/* Definir a rotina de resposta a sinais */
+	act.sa_sigaction = nano_sig_handler;
+
+	/* mascara sem sinais -- nao bloqueia os sinais */
+	sigemptyset(&act.sa_mask);
+
+	act.sa_flags = SA_SIGINFO; /*info adicional sobre o sinal */
+	act.sa_flags |= SA_RESTART; /*recupera chamadas bloqueantes*/
+
+	/* Captura do sinal SIGUSR1 */
+	if(sigaction(SIGUSR1, &act, NULL) < 0){
+	  ERROR(1, "sigaction - SIGUSR1");
+	}
+	/* Captura do sinal SIGUSR2 */
+	if(sigaction(SIGUSR2, &act, NULL) < 0){
+	  ERROR(1, "sigaction - SIGUSR2");
+	}/* Captura do sinal SIGUSR1 */
+	if(sigaction(SIGINT, &act, NULL) < 0){
+	  ERROR(1, "sigaction - SIGINT");
+	}
+
+
+
+
+
 	//TODO file parameter
 	//TODO max commands
 	//TODO signal file
