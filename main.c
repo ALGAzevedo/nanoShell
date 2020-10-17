@@ -34,7 +34,7 @@ int status = 0; // Status for terminating nanoShell
 
 /*Function Declaration*/
 char *nano_read_command(char *line);
-char **nano_split_lineptr(char *lineptr);
+char **nano_split_lineptr(char *lineptr, char **tokens, int buffersize);
 void nano_verify_pointer(char **ptr);
 void nano_exec_commands(char **tokens);
 int nano_verify_char(char *lineptr);
@@ -136,12 +136,11 @@ void nano_verify_pointer(char **ptr)
  * 
  * @return Function returns a pointer to a string array with the commands
  */
-char **nano_split_lineptr(char *lineptr)
+char **nano_split_lineptr(char *lineptr, char **tokens, int buffersize)
 {
 
 	char *token;
-	int buffersize = NANO_TOKENS_BUFSIZE;
-	char **tokens = malloc(buffersize * sizeof(char *));
+
 	int pos = 0;
 
 	if (tokens == NULL)
@@ -171,7 +170,6 @@ char **nano_split_lineptr(char *lineptr)
 	tokens[pos] = NULL;
 
 	return tokens;
-	//free(tokens);
 }
 
 /**
@@ -229,7 +227,12 @@ void nano_loop(void)
 			}
 			else
 			{
-				args = nano_split_lineptr(lineptr);
+				int buffersize = NANO_TOKENS_BUFSIZE;
+				char **tokens = malloc(buffersize * sizeof(char *));
+
+				args = nano_split_lineptr(lineptr, tokens, buffersize);
+
+				free(tokens);
 
 				nano_verify_terminate(args);
 
