@@ -55,10 +55,11 @@ void nano_verify_terminate(char **args);
 int nano_verify_redirect(char **args, char **outputfile);
 void nano_sig_handler(int sig, siginfo_t *siginfo, void *context);
 
-/**
+
+/*****************************************************************
  * Function to handle the signals
  * 
- */
+ ****************************************************************/
 void nano_sig_handler(int sig, siginfo_t *siginfo, void *context)
 {
 	(void)context;
@@ -127,10 +128,10 @@ void nano_sig_handler(int sig, siginfo_t *siginfo, void *context)
 	/* Restaura valor da variavel global errno */
 	errno = aux;
 }
-/**
+/*****************************************************************
  * Function to verify if its a redirect command
  * 
- */
+ ****************************************************************/
 int nano_verify_redirect(char **args, char **outputfile)
 {
 
@@ -184,11 +185,11 @@ int nano_verify_redirect(char **args, char **outputfile)
 	return -1;
 }
 
-/**
+/*****************************************************************
  * Function to verify termination of nanoShell
  * 
  * @return Function returns nothing
- */
+ ****************************************************************/
 void nano_verify_terminate(char **args)
 {
 	size_t size = sizeof(args) / sizeof(char **);
@@ -203,13 +204,12 @@ void nano_verify_terminate(char **args)
 	}
 }
 
-/**
+/*****************************************************************
  * Function to verify unsupported characters
  * 
  * @return int value 0 for OK, -1 for NOT OK
  * 
- */
-
+ ****************************************************************/
 int nano_verify_char(char *lineptr)
 {
 	int res = 0;
@@ -242,11 +242,11 @@ int nano_verify_char(char *lineptr)
 	return res;
 }
 
-/**
+/*****************************************************************
  * Function to verify pointers memory allocation
  * 
  * @return Function does not return anything
- */
+ ****************************************************************/
 void nano_verify_pointer(char **ptr)
 {
 	if (ptr == NULL)
@@ -255,12 +255,12 @@ void nano_verify_pointer(char **ptr)
 	}
 }
 
-/**
+/*****************************************************************
  * Function to parse and split the given
  *  commands from liteprt into tokens
  * 
  * @return Function returns a pointer to a string array with the commands
- */
+ ****************************************************************/
 char **nano_split_lineptr(char *lineptr)
 {
 
@@ -293,11 +293,11 @@ char **nano_split_lineptr(char *lineptr)
 	return tokens;
 }
 
-/**
+/*****************************************************************
  * Function to read the command inserted in the shell
  * 
  * @return Function returns a pointer to char with the command.
- */
+ ****************************************************************/
 char *nano_read_command(char *line)
 {
 
@@ -321,11 +321,11 @@ char *nano_read_command(char *line)
 	return line;
 }
 
-/**
+/***************************************************************
  * Function to start loop of the nanoShell
  * 
  * @return This function returns nothing
- */
+ **************************************************************/
 void nano_loop(void)
 {
 	char *lineptr;
@@ -431,7 +431,11 @@ int main(int argc, char *argv[])
 	int commands_executed = 0;
 	printf("[INFO] nanoShell with terminate after %d commands\n", max_executions);
 
-	/* HELP ARGUMENT */
+	/*************************************************************
+	 * 
+	 * HELP ARGUMENT CODE
+	 * 
+	 *************************************************************/
 	if (args.no_help_given)
 	{
 		printf("HELP FOR NANOSHELL\n\n");
@@ -440,7 +444,11 @@ int main(int argc, char *argv[])
 		printf("André Azevedo - 2182634\nAlexandre Santos - 2181593\n\n");
 	}
 
-	/* SIGNALS FILE ARGUMENT */
+	/*************************************************************
+	 * 
+	 * SIGNALS FILE ARGUMENT CODE
+	 * 
+	 *************************************************************/
 	if (args.signalfile_given)
 	{
 
@@ -464,8 +472,12 @@ int main(int argc, char *argv[])
 		fclose(fileptr);
 	}
 
-	//Save time process start
 
+	/*************************************************************
+	 * 
+	 * SAVE TIMESTAMP FOR NANOSHELL STARTUP
+	 * 
+	 *************************************************************/
 	time_t starttime = time(NULL);
 
 	if (starttime == -1)
@@ -482,8 +494,12 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	//SIGNAL HANDLER
-
+	
+	/*************************************************************
+	 * 
+	 * SIGNAL HANDLER
+	 * 
+	 *************************************************************/
 	struct sigaction act;
 
 	/* Definir a rotina de resposta a sinais */
@@ -511,9 +527,12 @@ int main(int argc, char *argv[])
 	}
 
 	//TODO file parameter
-	//TODO signal file
 
-	/* Main code */
+	/*************************************************************
+	 * 
+	 * MAIN LOOP
+	 * 
+	 *************************************************************/
 	nano_loop();
 
 	printf("[INFO] nanoShell executed %d commands\n", commands_executed);
