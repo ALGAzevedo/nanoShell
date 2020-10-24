@@ -26,10 +26,17 @@
  */
 
 #define NANO_TOKENS_BUFSIZE 32 //Size for tokes buffer
-#define NANO_TIME_BUFSIZE 256 //Size for time buffer
+#define NANO_TIME_BUFSIZE 256  //Size for time buffer
+
+#define NANO_ERROR_IO 5
 
 /* Global Variable declaration*/
 int status = 0; // Status for terminating nanoShell
+struct tm *ptm;
+struct tm *current;
+unsigned int count_stdout = 0;
+unsigned int count_stderr = 0;
+unsigned int count_commands = 0;
 
 /*Function Declaration*/
 char *nano_read_command(char *line);
@@ -55,32 +62,52 @@ void nano_sig_handler(int sig, siginfo_t *siginfo, void *context)
 
 	if (sig == SIGUSR1)
 	{
-
-		/* 	FILE *fileptr;
-		char *lineptr = NULL;
-		size_t n = 0;
-		ssize_t result;
-
-		fileptr = fopen(file, "rt");
-		if (fileptr == NULL)
-		{
-			ERROR(1, "Error opening for reading!\n");
-		}
-
-		while ((result = getline(&lineptr, &n, fileptr)) != -1)
-		{
-			printf("Found line with size: %zu : ", result);
-			printf("%s \n", lineptr);
-		}
-
-		free(lineptr);
-		fclose(fileptr); */
-
-		/* Restaura valor da variavel global errno */
-		errno = aux;
+		char buf[NANO_TIME_BUFSIZE] = {0};
+		strftime(buf, NANO_TIME_BUFSIZE, "\nnanoShell started at: %a %d %b %G - %T %z %Z", ptm);
+		printf("%s\n", buf);
 	}
 	else if (sig == SIGUSR2)
 	{
+
+		FILE *fileptr;
+
+		//Get the time to create the string for file
+
+		time_t starttime = time(NULL);
+
+		if (starttime == -1)
+		{
+			ERROR(1, "The time() function failed");
+		}
+
+		current = localtime(&starttime);
+
+		if (current == NULL)
+		{
+			ERROR(1, "The localtime() function failed");
+		}
+
+		//Create string for file name
+		char bufer[NANO_TIME_BUFSIZE] = {0};
+		strftime(bufer, NANO_TIME_BUFSIZE, "nanoShell_status_%d.%m.%Y_%Hh:%M.%S.txt", current);
+
+		//Open or Create file
+
+		fileptr = fopen(bufer, "w");
+		if (fileptr == NULL)
+		{
+			ERROR(NANO_ERROR_IO, "Error opening for writing!\n");
+		}
+
+		char buffer[1024];
+		snprintf(buffer, sizeof(buffer),
+				 "D\n%d execution(s) of applications\n%d execution(s) with STDOUT redir\n%d execution(s) with STDERR redir\n",
+				 count_commands, count_stdout, count_stderr);
+
+		printf("%s", buffer);
+
+		fwrite(buffer, 1, sizeof(bufer), fileptr);
+		fclose(fileptr);
 	}
 	else if (sig == SIGINT)
 	{
@@ -108,35 +135,45 @@ int nano_verify_redirect(char **args, char **outputfile)
 
 			args[i] = NULL;
 
+			//Increment STDOUT redir counter
+			count_stdout++;
 			return 1;
-		}
-		if ((strcmp(args[i], ">>") == 0))
-		{
-			*outputfile = args[i + 1];
 
-			args[i] = NULL;
+			if ((strcmp(args[i], ">>") == 0))
+			{
+				*outputfile = args[i + 1];
 
-			return 2;
-		}
-		if ((strcmp(args[i], "2>") == 0))
-		{
-			*outputfile = args[i + 1];
+				args[i] = NULL;
 
-			args[i] = NULL;
+				//Increment STDOUT redir counter
+				count_stdout++;
+				return 2;
+			}
+			if ((strcmp(args[i], "2>") == 0))
+			{
+				*outputfile = args[i + 1];
 
-			return 3;
-		}
-		if ((strcmp(args[i], "2>>") == 0))
-		{
+				args[i] = NULL;
 
-			*outputfile = args[i + 1];
+				//Increment STDERR redir counter
+				count_stderr++;
+				return 3;
+			}
+			if ((strcmp(args[i], "2>>") == 0))
+			{
 
-			args[i] = NULL;
+				*outputfile = args[i + 1];
 
-			return 4;
+				args[i] = NULL;
+
+				//Increment STDERR redir counter
+				count_stderr++;
+				return 4;
+			}
 		}
 	}
-
+	//Increment Commands counter
+	count_commands++;
 	return -1;
 }
 
@@ -196,34 +233,6 @@ int nano_verify_char(char *lineptr)
 		}
 	}
 	return res;
-}
-
-/**
- * Function to execute the commands
- * 
- * @return Function return nothing
- */
-
-void nano_exec_commands(char **tokens)
-{
-
-	pid_t pid;
-
-	pid = fork();
-
-	if (pid == -1)
-	{
-		ERROR(3, "Error executing fork().\n");
-	}
-	else if (pid == 0)
-	{
-		execvp(tokens[0], tokens);
-		ERROR(4, "Error executing execvp.\n");
-	}
-	else
-	{
-		wait(NULL);
-	}
 }
 
 /**
@@ -424,33 +433,21 @@ int main(int argc, char *argv[])
 
 	//Save time process start
 
-	char buf[NANO_TIME_BUFSIZE] = {0};
 	time_t starttime = time(NULL);
 
 	if (starttime == -1)
 	{
-
 		printf("The time() function failed");
 		return 1;
 	}
 
-	struct tm *ptm = localtime(&starttime);
+	ptm = localtime(&starttime);
 
 	if (ptm == NULL)
 	{
-
 		printf("The localtime() function failed");
 		return 1;
 	}
-	//printf("UTC time: %s", asctime(ptm));
-	strftime(buf, NANO_TIME_BUFSIZE, "%a %d %b %G - %T %z %Z", ptm);
-	printf("%s\n", buf);
-    
-
-
-/* 
-	printf("The time is: %02d/%02d/%d - %02d:%02d:%02d\n", ptm->tm_mday, ptm->tm_mon, ptm->tm_year, ptm->tm_hour,
-		   ptm->tm_min, ptm->tm_sec); */
 
 	//SIGNAL HANDLER
 
