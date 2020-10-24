@@ -24,14 +24,17 @@
 /**
  * DEFINITIONS
  */
-
 #define NANO_TOKENS_BUFSIZE 32 //Size for tokes buffer
 #define NANO_TIME_BUFSIZE 256 //Size for time buffer
 
-/* Global Variable declaration*/
-int status = 0; // Status for terminating nanoShell
+#define C_EXIT_FAILURE 			-1
+#define C_EXIT_SUCCESS 			0 
+#define C_ERROR_PARSING_ARGS 	1
 
-/*Function Declaration*/
+// DEFINE GLOBAL VARIABLES
+int status = 0; 			// Status for terminating nanoShell
+
+// FUNCTIONS DECLARATION
 char *nano_read_command(char *line);
 char **nano_split_lineptr(char *lineptr);
 void nano_verify_pointer(char **ptr);
@@ -154,7 +157,7 @@ void nano_verify_terminate(char **args)
 		if (strcmp(args[i], "bye") == 0)
 		{
 			printf("[INFO] bye command detected. Terminating nanoShell\n");
-			exit(0);
+			exit(C_EXIT_SUCCESS);
 		}
 	}
 }
@@ -208,7 +211,6 @@ void nano_exec_commands(char **tokens)
 {
 
 	pid_t pid;
-
 	pid = fork();
 
 	if (pid == -1)
@@ -217,6 +219,8 @@ void nano_exec_commands(char **tokens)
 	}
 	else if (pid == 0)
 	{
+		
+		
 		execvp(tokens[0], tokens);
 		ERROR(4, "Error executing execvp.\n");
 	}
@@ -299,7 +303,7 @@ char *nano_read_command(char *line)
 	{
 		if (feof(stdin))
 		{
-			exit(EXIT_SUCCESS);
+			exit(C_EXIT_SUCCESS);
 		}
 		else
 		{
@@ -374,6 +378,7 @@ void nano_loop(void)
 					default:
 						break;
 					}
+					
 					if (fp == NULL)
 					{
 						printf("[ERROR]Error opening file\n");
@@ -412,8 +417,14 @@ int main(int argc, char *argv[])
 
 	if (cmdline_parser(argc, argv, &args) != 0)
 	{
-		exit(1);
+		ERROR(C_ERROR_PARSING_ARGS, "Invalid arguments. nanoShell can't start.");
+		exit(C_EXIT_FAILURE);
 	}
+	// DONE - Max executions
+	int max_executions = args.max_arg;
+	int commands_executed = 0;
+	printf("[INFO] nanoShell with terminate after %d commands\n", max_executions);
+
 	if (args.no_help_given)
 	{
 		printf("HELP FOR NANOSHELL\n\n");
@@ -481,11 +492,11 @@ int main(int argc, char *argv[])
 	}
 
 	//TODO file parameter
-	//TODO max commands
 	//TODO signal file
 
 	/* Main code */
 	nano_loop();
 
-	return 0;
+	printf("[INFO] nanoShell executed %d commands\n", commands_executed);
+	return C_EXIT_SUCCESS;
 }
