@@ -239,38 +239,6 @@ int nano_verify_char(char *lineptr)
 }
 
 /**
-<<<<<<< HEAD
-=======
- * Function to execute the commands
- * 
- * @return Function return nothing
- */
-
-void nano_exec_commands(char **tokens)
-{
-
-	pid_t pid;
-	pid = fork();
-
-	if (pid == -1)
-	{
-		ERROR(3, "Error executing fork().\n");
-	}
-	else if (pid == 0)
-	{
-		
-		
-		execvp(tokens[0], tokens);
-		ERROR(4, "Error executing execvp.\n");
-	}
-	else
-	{
-		wait(NULL);
-	}
-}
-
-/**
->>>>>>> eebc43497051bc68dafe64c21c55f3a2ba086a36
  * Function to verify pointers memory allocation
  * 
  * @return Function does not return anything
