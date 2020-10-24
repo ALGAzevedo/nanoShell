@@ -19,15 +19,14 @@
 #include "debug.h"
 #include "memory.h"
 #include "args.h"
-
-//TODO REDIRECIONAMENTO
-//TODO TRATAR SINAIS
+#include "time.h"
 
 /**
  * DEFINITIONS
  */
 
 #define NANO_TOKENS_BUFSIZE 32 //Size for tokes buffer
+#define NANO_TIME_BUFSIZE 256 //Size for time buffer
 
 /* Global Variable declaration*/
 int status = 0; // Status for terminating nanoShell
@@ -42,12 +41,11 @@ void nano_verify_terminate(char **args);
 int nano_verify_redirect(char **args, char **outputfile);
 void nano_sig_handler(int sig, siginfo_t *siginfo, void *context);
 
-
 /**
  * Function to handle the signals
  * 
  */
-void nano_sig_handler(int sig, siginfo_t *siginfo, void *context) 
+void nano_sig_handler(int sig, siginfo_t *siginfo, void *context)
 {
 	(void)context;
 	int aux;
@@ -58,7 +56,7 @@ void nano_sig_handler(int sig, siginfo_t *siginfo, void *context)
 	if (sig == SIGUSR1)
 	{
 
-	/* 	FILE *fileptr;
+		/* 	FILE *fileptr;
 		char *lineptr = NULL;
 		size_t n = 0;
 		ssize_t result;
@@ -80,13 +78,15 @@ void nano_sig_handler(int sig, siginfo_t *siginfo, void *context)
 
 		/* Restaura valor da variavel global errno */
 		errno = aux;
-		
-	}else if(sig == SIGUSR2){
-
-	}else if( sig == SIGINT){		
+	}
+	else if (sig == SIGUSR2)
+	{
+	}
+	else if (sig == SIGINT)
+	{
 		printf("[INFO] Received SIGINT from PID: %ld\n", (long)siginfo->si_pid);
 		printf("\n[INFO] nanoShell is terminating.\n");
-		
+
 		exit(0);
 	}
 
@@ -147,7 +147,7 @@ int nano_verify_redirect(char **args, char **outputfile)
  */
 void nano_verify_terminate(char **args)
 {
-	size_t size = sizeof(args) / sizeof(args[0]);
+	size_t size = sizeof(args) / sizeof(char **);
 
 	for (size_t i = 0; i < size; i++)
 	{
@@ -162,7 +162,7 @@ void nano_verify_terminate(char **args)
 /**
  * Function to verify unsupported characters
  * 
- * @return int value 0 for OK -1 for NOT OK
+ * @return int value 0 for OK, -1 for NOT OK
  * 
  */
 
@@ -176,6 +176,13 @@ int nano_verify_char(char *lineptr)
 
 	size_t verlength = sizeof(verify) / sizeof(verify[0]);
 
+	/* Verify SPACE and TAB and % in first char */
+	if (lineptr[0] == 32 || lineptr[0] == 9 || lineptr[0] == 37)
+	{
+		return -1;
+	}
+
+	/* Verify other chars */
 	for (i = 0; i < length; i++)
 	{
 		for (size_t j = 0; j < verlength; j++)
@@ -347,6 +354,7 @@ void nano_loop(void)
 				{
 					FILE *fp;
 
+					/* Verify if it is a redirect command */
 					result = nano_verify_redirect(args, &outputfile);
 
 					switch (result)
@@ -371,11 +379,10 @@ void nano_loop(void)
 						printf("[ERROR]Error opening file\n");
 					}
 
-					nano_exec_commands(args);
-					if (fp != NULL)
-					{
-						fclose(fp);
-					}
+					/* Execute commands */
+					execvp(args[0], args);
+					ERROR(4, "Error executing execvp.\n");
+
 					exit(0);
 				}
 				else
@@ -415,9 +422,38 @@ int main(int argc, char *argv[])
 		printf("André Azevedo - 2182634\nAlexandre Santos - 2181593\n\n");
 	}
 
+	//Save time process start
+
+	char buf[NANO_TIME_BUFSIZE] = {0};
+	time_t starttime = time(NULL);
+
+	if (starttime == -1)
+	{
+
+		printf("The time() function failed");
+		return 1;
+	}
+
+	struct tm *ptm = localtime(&starttime);
+
+	if (ptm == NULL)
+	{
+
+		printf("The localtime() function failed");
+		return 1;
+	}
+	//printf("UTC time: %s", asctime(ptm));
+	strftime(buf, NANO_TIME_BUFSIZE, "%a %d %b %G - %T %z %Z", ptm);
+	printf("%s\n", buf);
+    
+
+
+/* 
+	printf("The time is: %02d/%02d/%d - %02d:%02d:%02d\n", ptm->tm_mday, ptm->tm_mon, ptm->tm_year, ptm->tm_hour,
+		   ptm->tm_min, ptm->tm_sec); */
 
 	//SIGNAL HANDLER
-	
+
 	struct sigaction act;
 
 	/* Definir a rotina de resposta a sinais */
@@ -426,24 +462,23 @@ int main(int argc, char *argv[])
 	/* mascara sem sinais -- nao bloqueia os sinais */
 	sigemptyset(&act.sa_mask);
 
-	act.sa_flags = SA_SIGINFO; /*info adicional sobre o sinal */
+	act.sa_flags = SA_SIGINFO;	/*info adicional sobre o sinal */
 	act.sa_flags |= SA_RESTART; /*recupera chamadas bloqueantes*/
 
 	/* Captura do sinal SIGUSR1 */
-	if(sigaction(SIGUSR1, &act, NULL) < 0){
-	  ERROR(1, "sigaction - SIGUSR1");
+	if (sigaction(SIGUSR1, &act, NULL) < 0)
+	{
+		ERROR(1, "sigaction - SIGUSR1");
 	}
 	/* Captura do sinal SIGUSR2 */
-	if(sigaction(SIGUSR2, &act, NULL) < 0){
-	  ERROR(1, "sigaction - SIGUSR2");
-	}/* Captura do sinal SIGUSR1 */
-	if(sigaction(SIGINT, &act, NULL) < 0){
-	  ERROR(1, "sigaction - SIGINT");
+	if (sigaction(SIGUSR2, &act, NULL) < 0)
+	{
+		ERROR(1, "sigaction - SIGUSR2");
+	} /* Captura do sinal SIGUSR1 */
+	if (sigaction(SIGINT, &act, NULL) < 0)
+	{
+		ERROR(1, "sigaction - SIGINT");
 	}
-
-
-
-
 
 	//TODO file parameter
 	//TODO max commands
