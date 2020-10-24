@@ -29,8 +29,13 @@
 #define C_EXIT_FAILURE 			-1
 #define C_EXIT_SUCCESS 			0 
 #define C_ERROR_PARSING_ARGS 	1
+#define NANO_TIME_ERROR 2
+#define NANO_ERROR_MALLOC 3
+#define NANO_ERROR_READ 4
 #define NANO_ERROR_IO 5
-
+#define NANO_ERROR_FORK 6
+#define NANO_ERROR_EXECVP 7
+#define NANO_ERROR_SIGACTION 8
 
 
 // DEFINE GLOBAL VARIABLES
@@ -80,14 +85,14 @@ void nano_sig_handler(int sig, siginfo_t *siginfo, void *context)
 
 		if (starttime == -1)
 		{
-			ERROR(1, "The time() function failed");
+			ERROR(NANO_TIME_ERROR, "The time() function failed");
 		}
 
 		current = localtime(&starttime);
 
 		if (current == NULL)
 		{
-			ERROR(1, "The localtime() function failed");
+			ERROR(NANO_TIME_ERROR, "The localtime() function failed");
 		}
 
 		//Create string for file name
@@ -247,7 +252,7 @@ void nano_verify_pointer(char **ptr)
 {
 	if (ptr == NULL)
 	{
-		ERROR(2, "[ERROR]Memory Allocation Failed\n");
+		ERROR(NANO_ERROR_MALLOC, "[ERROR]Memory Allocation Failed\n");
 	}
 }
 
@@ -266,10 +271,7 @@ char **nano_split_lineptr(char *lineptr)
 
 	int pos = 0;
 
-	if (tokens == NULL)
-	{
-		ERROR(2, "[ERROR]Memory Allocation Failed\n");
-	}
+	nano_verify_pointer(tokens);
 
 	token = strtok(lineptr, " ");
 	while (token != NULL)
@@ -282,10 +284,7 @@ char **nano_split_lineptr(char *lineptr)
 			buffersize = buffersize + NANO_TOKENS_BUFSIZE;
 			tokens = realloc(tokens, buffersize * sizeof(char *));
 
-			if (tokens == NULL)
-			{
-				ERROR(2, "[ERROR]Memory Allocation Failed\n");
-			}
+			nano_verify_pointer(tokens);
 		}
 		token = strtok(NULL, " ");
 	}
@@ -315,7 +314,7 @@ char *nano_read_command(char *line)
 		}
 		else
 		{
-			ERROR(1, "[ERROR]Error reading commands\n");
+			ERROR(NANO_ERROR_READ, "[ERROR]Error reading commands\n");
 		}
 	}
 	line[strcspn(line, "\n")] = 0;
@@ -360,7 +359,7 @@ void nano_loop(void)
 				pid_t pid = fork();
 				if (pid == -1)
 				{
-					ERROR(3, "Error executing fork().\n");
+					ERROR(NANO_ERROR_FORK, "Error executing fork().\n");
 				}
 				else if (pid == 0)
 				{
@@ -394,7 +393,7 @@ void nano_loop(void)
 
 					/* Execute commands */
 					execvp(args[0], args);
-					ERROR(4, "Error executing execvp.\n");
+					ERROR(NANO_ERROR_EXECVP, "Error executing execvp.\n");
 
 					exit(0);
 				}
@@ -475,16 +474,16 @@ int main(int argc, char *argv[])
 	/* Captura do sinal SIGUSR1 */
 	if (sigaction(SIGUSR1, &act, NULL) < 0)
 	{
-		ERROR(1, "sigaction - SIGUSR1");
+		ERROR(NANO_ERROR_SIGACTION, "sigaction - SIGUSR1");
 	}
 	/* Captura do sinal SIGUSR2 */
 	if (sigaction(SIGUSR2, &act, NULL) < 0)
 	{
-		ERROR(1, "sigaction - SIGUSR2");
+		ERROR(NANO_ERROR_SIGACTION, "sigaction - SIGUSR2");
 	} /* Captura do sinal SIGUSR1 */
 	if (sigaction(SIGINT, &act, NULL) < 0)
 	{
-		ERROR(1, "sigaction - SIGINT");
+		ERROR(NANO_ERROR_SIGACTION, "sigaction - SIGINT");
 	}
 
 	//TODO file parameter
