@@ -106,12 +106,14 @@ void nano_sig_handler(int sig, siginfo_t *siginfo, void *context)
 			ERROR(NANO_ERROR_IO, "Error opening for writing!\n");
 		}
 
-		char buffer[1024];
+/* 		char buffer[256];
 		snprintf(buffer, sizeof(buffer),
 				 "\n%d execution(s) of applications\n%d execution(s) with STDOUT redir\n%d execution(s) with STDERR redir\n",
 				 count_commands, count_stdout, count_stderr);
+		fwrite(buffer, 1, sizeof(bufer), fileptr); */
 
-		fwrite(buffer, 1, sizeof(bufer), fileptr);
+		fprintf(fileptr, "%d execution(s) of applications\n%d execution(s) with STDOUT redir\n%d execution(s) with STDERR redir\n",
+				count_commands, count_stdout, count_stderr);
 		fclose(fileptr);
 	}
 	else if (sig == SIGINT)
@@ -450,13 +452,15 @@ int main(int argc, char *argv[])
 			ERROR(NANO_ERROR_IO, "Error opening for writing!\n");
 		}
 
-		char buffer[64];
+		
 		pid_t pid = getpid();
 
-		
+/* 		char buffer[64];
 		snprintf(buffer, sizeof(buffer), "kill -SIGINT %d\nkill -SIGUSR1 %d\nkill -SIGUSR2 %d", pid, pid, pid);
+		fwrite(buffer, 1, sizeof(buffer), fileptr);  */
 
-		fwrite(buffer, 1, sizeof(buffer), fileptr);
+		fprintf(fileptr, "kill -SIGINT %d\nkill -SIGUSR1 %d\nkill -SIGUSR2 %d", pid, pid, pid);
+
 		fclose(fileptr);
 	}
 
