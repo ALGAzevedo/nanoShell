@@ -26,9 +26,9 @@
  */
 #define NANO_TOKENS_BUFSIZE 32 //Size for tokes buffer
 #define NANO_TIME_BUFSIZE 256  //Size for time buffer
-#define C_EXIT_FAILURE 			-1
-#define C_EXIT_SUCCESS 			0 
-#define C_ERROR_PARSING_ARGS 	1
+#define C_EXIT_FAILURE -1
+#define C_EXIT_SUCCESS 0
+#define C_ERROR_PARSING_ARGS 1
 #define NANO_TIME_ERROR 2
 #define NANO_ERROR_MALLOC 3
 #define NANO_ERROR_READ 4
@@ -37,9 +37,8 @@
 #define NANO_ERROR_EXECVP 7
 #define NANO_ERROR_SIGACTION 8
 
-
 // DEFINE GLOBAL VARIABLES
-int status = 0; 			// Status for terminating nanoShell
+int status = 0; // Status for terminating nanoShell
 struct tm *ptm;
 struct tm *current;
 unsigned int count_stdout = 0;
@@ -107,14 +106,14 @@ void nano_sig_handler(int sig, siginfo_t *siginfo, void *context)
 			ERROR(NANO_ERROR_IO, "Error opening for writing!\n");
 		}
 
-		char buffer[1024];
+/* 		char buffer[256];
 		snprintf(buffer, sizeof(buffer),
-				 "D\n%d execution(s) of applications\n%d execution(s) with STDOUT redir\n%d execution(s) with STDERR redir\n",
+				 "\n%d execution(s) of applications\n%d execution(s) with STDOUT redir\n%d execution(s) with STDERR redir\n",
 				 count_commands, count_stdout, count_stderr);
+		fwrite(buffer, 1, sizeof(bufer), fileptr); */
 
-		printf("%s", buffer);
-
-		fwrite(buffer, 1, sizeof(bufer), fileptr);
+		fprintf(fileptr, "%d execution(s) of applications\n%d execution(s) with STDOUT redir\n%d execution(s) with STDERR redir\n",
+				count_commands, count_stdout, count_stderr);
 		fclose(fileptr);
 	}
 	else if (sig == SIGINT)
@@ -385,7 +384,7 @@ void nano_loop(void)
 					default:
 						break;
 					}
-					
+
 					if (fp == NULL)
 					{
 						printf("[ERROR]Error opening file\n");
@@ -432,12 +431,37 @@ int main(int argc, char *argv[])
 	int commands_executed = 0;
 	printf("[INFO] nanoShell with terminate after %d commands\n", max_executions);
 
+	/* HELP ARGUMENT */
 	if (args.no_help_given)
 	{
 		printf("HELP FOR NANOSHELL\n\n");
 		printf("#Use simple commands without metachars and pipes \n Ex: ps aux -l \n\n");
 		printf("#Use bye command to exit nanoShell\n\n\nAuthors:\n");
 		printf("André Azevedo - 2182634\nAlexandre Santos - 2181593\n\n");
+	}
+
+	/* SIGNALS FILE ARGUMENT */
+	if (args.signalfile_given)
+	{
+
+		FILE *fileptr;
+
+		fileptr = fopen("signals.txt", "w");
+		if (fileptr == NULL)
+		{
+			ERROR(NANO_ERROR_IO, "Error opening for writing!\n");
+		}
+
+		
+		pid_t pid = getpid();
+
+/* 		char buffer[64];
+		snprintf(buffer, sizeof(buffer), "kill -SIGINT %d\nkill -SIGUSR1 %d\nkill -SIGUSR2 %d", pid, pid, pid);
+		fwrite(buffer, 1, sizeof(buffer), fileptr);  */
+
+		fprintf(fileptr, "kill -SIGINT %d\nkill -SIGUSR1 %d\nkill -SIGUSR2 %d", pid, pid, pid);
+
+		fclose(fileptr);
 	}
 
 	//Save time process start
