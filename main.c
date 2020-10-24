@@ -20,6 +20,15 @@
 #include "memory.h"
 #include "args.h"
 
+// DEFINE STATIC ERROR CODES
+#define C_EXIT_FAILURE 			-1
+#define C_EXIT_SUCCESS 			0
+#define C_ERROR_PARSING_ARGS 	1
+
+// DEFINE GLOBAL VARIABLES
+int max_executions = 0;
+int commands_executed = 0;
+
 //TODO REDIRECIONAMENTO
 //TODO TRATAR SINAIS
 
@@ -354,8 +363,13 @@ int main(int argc, char *argv[])
 
 	if (cmdline_parser(argc, argv, &args) != 0)
 	{
-		exit(1);
+		ERROR(C_ERROR_PARSING_ARGS, "Invalid arguments. nanoShell can't start.");
+		exit(C_EXIT_FAILURE);
 	}
+	// DONE - Max executions
+	max_executions = args.max_arg;
+	printf("[INFO] nanoShell with terminate after %d commands\n", max_executions);
+
 	if (args.no_help_given)
 	{
 		printf("HELP FOR NANOSHELL\n\n");
@@ -364,11 +378,12 @@ int main(int argc, char *argv[])
 		printf("André Azevedo - 2182634\nAlexandre Santos - 2181593\n\n");
 	}
 	//TODO file parameter
-	//TODO max commands
 	//TODO signal file
 
 	/* Main code */
 	nano_loop();
 
-	return 0;
+	printf("[INFO] nanoShell executed %d commands\n", commands_executed);
+
+	return C_EXIT_SUCCESS;
 }
