@@ -1,0 +1,4 @@
+ls
+ps
+# COMENT
+ps >> test2.txt
