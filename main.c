@@ -43,7 +43,8 @@ struct tm *ptm;
 struct tm *current;
 unsigned int count_stdout = 0;
 unsigned int count_stderr = 0;
-unsigned int count_commands = 0;
+int max_commands = 0;
+int *executed_commandsptr;
 
 // FUNCTIONS DECLARATION
 char *nano_read_command(char *line);
@@ -110,11 +111,11 @@ void nano_sig_handler(int sig, siginfo_t *siginfo, void *context)
 /* 		char buffer[256];
 		snprintf(buffer, sizeof(buffer),
 				 "\n%d execution(s) of applications\n%d execution(s) with STDOUT redir\n%d execution(s) with STDERR redir\n",
-				 count_commands, count_stdout, count_stderr);
+				 *executed_commandsptr, count_stdout, count_stderr);
 		fwrite(buffer, 1, sizeof(bufer), fileptr); */
 
 		fprintf(fileptr, "%d execution(s) of applications\n%d execution(s) with STDOUT redir\n%d execution(s) with STDERR redir\n",
-				count_commands, count_stdout, count_stderr);
+				*executed_commandsptr, count_stdout, count_stderr);
 		fclose(fileptr);
 	}
 	else if (sig == SIGINT)
@@ -180,8 +181,6 @@ int nano_verify_redirect(char **args, char **outputfile)
 			}
 		}
 	}
-	//Increment Commands counter
-	count_commands++;
 	return -1;
 }
 
@@ -405,6 +404,13 @@ void nano_loop(void)
 		}
 
 		free(line);
+		
+		//Increment Commands counter
+		++(*executed_commandsptr);
+		//printf("[INFO] Comandos executados: %d\n", *executed_commandsptr);
+		if( *executed_commandsptr == max_commands) { 	// verifying equal because of performance and we know we are incrementing +1 everytime
+			status = 1;								// to stops the loop
+		}
 
 	} while (status == 0);
 }
@@ -418,6 +424,7 @@ int main(int argc, char *argv[])
 	/* Disable warnings */
 	(void)argc;
 	(void)argv;
+	int executed_commands = 0;
 
 	struct gengetopt_args_info args;
 
@@ -426,10 +433,15 @@ int main(int argc, char *argv[])
 		ERROR(C_ERROR_PARSING_ARGS, "Invalid arguments. nanoShell can't start.");
 		exit(C_EXIT_FAILURE);
 	}
-	// DONE - Max executions
-	int max_executions = args.max_arg;
-	int commands_executed = 0;
-	printf("[INFO] nanoShell with terminate after %d commands\n", max_executions);
+	// Max executions
+	max_commands = args.max_arg;
+	if (max_commands <= 0) {
+		printf("ERROR: invalid value \'int\' for -m/--max.\n\n");
+		
+	} else {
+		executed_commandsptr = &executed_commands;
+		printf("[INFO] nanoShell with terminate after %d commands\n", max_commands);
+	}
 
 	/*************************************************************
 	 * 
@@ -535,6 +547,8 @@ int main(int argc, char *argv[])
 	 *************************************************************/
 	nano_loop();
 
-	printf("[INFO] nanoShell executed %d commands\n", commands_executed);
+	if (max_commands > 0) {
+		printf("[INFO] nanoShell executed %d commands\n", executed_commands);
+	}
 	return C_EXIT_SUCCESS;
 }
