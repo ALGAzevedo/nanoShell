@@ -43,8 +43,8 @@ struct tm *ptm;
 struct tm *current;
 unsigned int count_stdout = 0;
 unsigned int count_stderr = 0;
-int max_commands = 0;
-int *executed_commandsptr;
+unsigned int max_commands = 0;
+unsigned int *executed_commandsptr;
 
 // FUNCTIONS DECLARATION
 char *nano_read_command(char *line);
@@ -107,7 +107,7 @@ void nano_sig_handler(int sig, siginfo_t *siginfo, void *context)
 			ERROR(NANO_ERROR_IO, "Error opening for writing!\n");
 		}
 
-		/*		char buffer[256];
+		/* 		char buffer[256];
 		snprintf(buffer, sizeof(buffer),
 				 "\n%d execution(s) of applications\n%d execution(s) with STDOUT redir\n%d execution(s) with STDERR redir\n",
 				 *executed_commandsptr, count_stdout, count_stderr);
@@ -180,6 +180,11 @@ int nano_verify_redirect(char **args, char **outputfile)
 			return 4;
 		}
 	}
+	
+	//Increment Commands counter
+	(*executed_commandsptr)++;
+	// PERGUNTAR AO PROF: Como fazer update ao ponteiro dentro do fork()?
+	//printf("[INFO] Comandos executados: %d\n", *executed_commandsptr);
 
 	return -1;
 }
@@ -406,9 +411,9 @@ void nano_loop(void)
 
 		free(line);
 
-		//Increment Commands counter
-		++(*executed_commandsptr);
-		//printf("[INFO] Comandos executados: %d\n", *executed_commandsptr);
+		// TODO -> Remover incrementador depois de resolver o problema do fork().
+		(*executed_commandsptr)++;
+
 		if (*executed_commandsptr == max_commands)
 		{				// verifying equal because of performance and we know we are incrementing +1 everytime
 			status = 1; // to stops the loop
@@ -426,7 +431,7 @@ int main(int argc, char *argv[])
 	/* Disable warnings */
 	(void)argc;
 	(void)argv;
-	int executed_commands = 0;
+	unsigned int executed_commands = 0;
 
 	struct gengetopt_args_info args;
 
@@ -436,15 +441,19 @@ int main(int argc, char *argv[])
 		exit(C_EXIT_FAILURE);
 	}
 	// Max executions
-	max_commands = args.max_arg;
-	if (max_commands <= 0)
+	if (args.max_given)
 	{
-		printf("ERROR: invalid value \'int\' for -m/--max.\n\n");
-	}
-	else
-	{
-		executed_commandsptr = &executed_commands;
-		printf("[INFO] nanoShell with terminate after %d commands\n", max_commands);
+		if (args.max_arg <= 0)
+		{
+			printf("ERROR: invalid value \'int\' for -m/--max.\n\n");
+			// PERGUNTAR AO PROF: DEVE TERMINAR A SHELL?
+		}
+		else
+		{
+			max_commands = args.max_arg;
+			executed_commandsptr = &executed_commands;
+			printf("[INFO] nanoShell with terminate after %d commands\n", max_commands);
+		}
 	}
 
 	/*************************************************************
@@ -548,7 +557,7 @@ int main(int argc, char *argv[])
 	 *************************************************************/
 	nano_loop();
 
-	if (max_commands > 0)
+	if (args.max_arg && max_commands > 0)
 	{
 		printf("[INFO] nanoShell executed %d commands\n", executed_commands);
 	}
