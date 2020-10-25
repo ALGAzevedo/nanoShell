@@ -137,6 +137,7 @@ int nano_verify_redirect(char **args, char **outputfile)
 
 	for (int i = 0; args[i] != NULL; i++)
 	{
+		printf("%s\n", args[i]);
 		if ((strcmp(args[i], ">") == 0))
 		{
 			*outputfile = args[i + 1];
@@ -146,38 +147,37 @@ int nano_verify_redirect(char **args, char **outputfile)
 			//Increment STDOUT redir counter
 			count_stdout++;
 			return 1;
+		}
+		if ((strcmp(args[i], ">>") == 0))
+		{
+			*outputfile = args[i + 1];
 
-			if ((strcmp(args[i], ">>") == 0))
-			{
-				*outputfile = args[i + 1];
+			args[i] = NULL;
 
-				args[i] = NULL;
+			//Increment STDOUT redir counter
+			count_stdout++;
+			return 2;
+		}
+		if ((strcmp(args[i], "2>") == 0))
+		{
+			*outputfile = args[i + 1];
 
-				//Increment STDOUT redir counter
-				count_stdout++;
-				return 2;
-			}
-			if ((strcmp(args[i], "2>") == 0))
-			{
-				*outputfile = args[i + 1];
+			args[i] = NULL;
 
-				args[i] = NULL;
+			//Increment STDERR redir counter
+			count_stderr++;
+			return 3;
+		}
+		if ((strcmp(args[i], "2>>") == 0))
+		{
 
-				//Increment STDERR redir counter
-				count_stderr++;
-				return 3;
-			}
-			if ((strcmp(args[i], "2>>") == 0))
-			{
+			*outputfile = args[i + 1];
 
-				*outputfile = args[i + 1];
+			args[i] = NULL;
 
-				args[i] = NULL;
-
-				//Increment STDERR redir counter
-				count_stderr++;
-				return 4;
-			}
+			//Increment STDERR redir counter
+			count_stderr++;
+			return 4;
 		}
 	}
 	
@@ -389,6 +389,7 @@ void nano_loop(void)
 						break;
 					}
 
+					
 					if (fp == NULL)
 					{
 						printf("[ERROR]Error opening file\n");
