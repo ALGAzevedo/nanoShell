@@ -43,18 +43,19 @@ struct tm *ptm;
 struct tm *current;
 unsigned int count_stdout = 0;
 unsigned int count_stderr = 0;
-unsigned int max_commands = 0;
-unsigned int *executed_commandsptr;
+int max_commands = 0;
+int *executed_commandsptr;
 
 // FUNCTIONS DECLARATION
 char *nano_read_command(char *line);
 char **nano_split_lineptr(char *lineptr);
 void nano_verify_pointer(char **ptr);
-void nano_exec_commands(char *lineptr);
+void nano_exec_commands(char **tokens);
 int nano_verify_char(char *lineptr);
 void nano_verify_terminate(char **args);
 int nano_verify_redirect(char **args, char **outputfile);
 void nano_sig_handler(int sig, siginfo_t *siginfo, void *context);
+
 
 /*****************************************************************
  * Function to handle the signals
@@ -107,7 +108,7 @@ void nano_sig_handler(int sig, siginfo_t *siginfo, void *context)
 			ERROR(NANO_ERROR_IO, "Error opening for writing!\n");
 		}
 
-		/* 		char buffer[256];
+/* 		char buffer[256];
 		snprintf(buffer, sizeof(buffer),
 				 "\n%d execution(s) of applications\n%d execution(s) with STDOUT redir\n%d execution(s) with STDERR redir\n",
 				 *executed_commandsptr, count_stdout, count_stderr);
@@ -137,7 +138,6 @@ int nano_verify_redirect(char **args, char **outputfile)
 
 	for (int i = 0; args[i] != NULL; i++)
 	{
-
 		if ((strcmp(args[i], ">") == 0))
 		{
 			*outputfile = args[i + 1];
@@ -147,45 +147,40 @@ int nano_verify_redirect(char **args, char **outputfile)
 			//Increment STDOUT redir counter
 			count_stdout++;
 			return 1;
-		}
-		if ((strcmp(args[i], ">>") == 0))
-		{
-			*outputfile = args[i + 1];
 
-			args[i] = NULL;
+			if ((strcmp(args[i], ">>") == 0))
+			{
+				*outputfile = args[i + 1];
 
-			//Increment STDOUT redir counter
-			count_stdout++;
-			return 2;
-		}
-		if ((strcmp(args[i], "2>") == 0))
-		{
-			*outputfile = args[i + 1];
+				args[i] = NULL;
 
-			args[i] = NULL;
+				//Increment STDOUT redir counter
+				count_stdout++;
+				return 2;
+			}
+			if ((strcmp(args[i], "2>") == 0))
+			{
+				*outputfile = args[i + 1];
 
-			//Increment STDERR redir counter
-			count_stderr++;
-			return 3;
-		}
-		if ((strcmp(args[i], "2>>") == 0))
-		{
+				args[i] = NULL;
 
-			*outputfile = args[i + 1];
+				//Increment STDERR redir counter
+				count_stderr++;
+				return 3;
+			}
+			if ((strcmp(args[i], "2>>") == 0))
+			{
 
-			args[i] = NULL;
+				*outputfile = args[i + 1];
 
-			//Increment STDERR redir counter
-			count_stderr++;
-			return 4;
+				args[i] = NULL;
+
+				//Increment STDERR redir counter
+				count_stderr++;
+				return 4;
+			}
 		}
 	}
-	
-	//Increment Commands counter
-	(*executed_commandsptr)++;
-	// PERGUNTAR AO PROF: Como fazer update ao ponteiro dentro do fork()?
-	//printf("[INFO] Comandos executados: %d\n", *executed_commandsptr);
-
 	return -1;
 }
 
@@ -308,6 +303,7 @@ char *nano_read_command(char *line)
 	size_t n = 0;
 	ssize_t result;
 
+	printf("nanoShell$ ");
 	if ((result = getline(&line, &n, stdin)) == -1)
 	{
 		if (feof(stdin))
@@ -325,59 +321,63 @@ char *nano_read_command(char *line)
 }
 
 /***************************************************************
- * FUNCTION TO PARSE VALIDADE AND EXECUTE COMMANDS
+ * Function to start loop of the nanoShell
  * 
- * @return NULL
- ***************************************************************/
-void nano_exec_commands(char *lineptr)
+ * @return This function returns nothing
+ **************************************************************/
+void nano_loop(void)
 {
-	char **args;
+	char *lineptr;
 
-	if (lineptr[0] != 0)
+	do
 	{
 
-		int res = nano_verify_char(lineptr);
-		if (res == -1)
+		char *line = NULL;
+		char **args;
+
+		lineptr = nano_read_command(line);
+
+		if (lineptr[0] != 0)
 		{
-			printf("[ERROR] Wrong request '%s'\n", lineptr);
-		}
-		else
-		{
-			char *outputfile;
-			int result;
 
-			args = nano_split_lineptr(lineptr);
-
-			nano_verify_terminate(args);
-
-			pid_t pid = fork();
-			if (pid == -1)
+			int res = nano_verify_char(lineptr);
+			if (res == -1)
 			{
-				ERROR(NANO_ERROR_FORK, "Error executing fork().\n");
+				printf("[ERROR] Wrong request ' %s\n", lineptr);
 			}
-			else if (pid == 0)
+			else
 			{
-				/* Verify if it is a redirect command */
-				result = nano_verify_redirect(args, &outputfile);
-				if (result > 0)
+				char *outputfile;
+				int result;
+
+				args = nano_split_lineptr(lineptr);
+
+				nano_verify_terminate(args);
+
+				pid_t pid = fork();
+				if (pid == -1)
+				{
+					ERROR(NANO_ERROR_FORK, "Error executing fork().\n");
+				}
+				else if (pid == 0)
 				{
 					FILE *fp;
+
+					/* Verify if it is a redirect command */
+					result = nano_verify_redirect(args, &outputfile);
+
 					switch (result)
 					{
 					case 1:
-						printf("[INFO] stdout redirect to %s\n", outputfile);
 						fp = freopen(outputfile, "w", stdout);
 						break;
 					case 2:
-						printf("[INFO] stdout redirect to %s\n", outputfile);
 						fp = freopen(outputfile, "a", stdout);
 						break;
 					case 3:
-						printf("[INFO] stderr redirect to %s\n", outputfile);
 						fp = freopen(outputfile, "w", stderr);
 						break;
 					case 4:
-						printf("[INFO] stderr redirect to %s\n", outputfile);
 						fp = freopen(outputfile, "a", stderr);
 						break;
 					default:
@@ -386,51 +386,32 @@ void nano_exec_commands(char *lineptr)
 
 					if (fp == NULL)
 					{
-						printf("[ERROR] Error opening file\n");
+						printf("[ERROR]Error opening file\n");
 					}
+
+					/* Execute commands */
+					execvp(args[0], args);
+					ERROR(NANO_ERROR_EXECVP, "Error executing execvp.\n");
+
+					exit(0);
 				}
-				printf("\n È ISTO OH BOI: %s\n", args[0]);
-				/* Execute commands */
-				execvp(args[0], args);
-				ERROR(NANO_ERROR_EXECVP, "Error executing execvp.\n");
-
-				exit(0);
-			}
-			else
-			{
-				wait(NULL);
-				free(args);
+				else
+				{
+					wait(NULL);
+					free(args);
+				}
 			}
 		}
-	}
-}
 
-/***************************************************************
- * Function to start loop of the nanoShell
- * 
- * @return This function returns nothing
- **************************************************************/
-void nano_loop(void)
-{
-	char *lineptr = NULL;
-
-	do
-	{
-		char *line = NULL;
-
-		printf("nanoShell$ ");
-		lineptr = nano_read_command(line);
-
-		nano_exec_commands(lineptr);
-
-		// TODO -> Remover incrementador depois de resolver o problema do fork().
-		(*executed_commandsptr)++;
-
-		if (*executed_commandsptr == max_commands)
-		{				// verifying equal because of performance and we know we are incrementing +1 everytime
-			status = 1; // to stops the loop
-		}
 		free(line);
+		
+		//Increment Commands counter
+		++(*executed_commandsptr);
+		//printf("[INFO] Comandos executados: %d\n", *executed_commandsptr);
+		if( *executed_commandsptr == max_commands) { 	// verifying equal because of performance and we know we are incrementing +1 everytime
+			status = 1;								// to stops the loop
+		}
+
 	} while (status == 0);
 }
 
@@ -443,7 +424,7 @@ int main(int argc, char *argv[])
 	/* Disable warnings */
 	(void)argc;
 	(void)argv;
-	unsigned int executed_commands = 0;
+	int executed_commands = 0;
 
 	struct gengetopt_args_info args;
 
@@ -452,24 +433,14 @@ int main(int argc, char *argv[])
 		ERROR(C_ERROR_PARSING_ARGS, "Invalid arguments. nanoShell can't start.");
 		exit(C_EXIT_FAILURE);
 	}
-	/*************************************************************
-	 * 
-	 * MAX EXECUTIONS ARGUMENT CODE
-	 * 
-	 *************************************************************/
-	if (args.max_given)
-	{
-		if (args.max_arg <= 0)
-		{
-			printf("ERROR: invalid value \'int\' for -m/--max.\n\n");
-			// PERGUNTAR AO PROF: DEVE TERMINAR A SHELL?
-		}
-		else
-		{
-			max_commands = args.max_arg;
-			executed_commandsptr = &executed_commands;
-			printf("[INFO] nanoShell with terminate after %d commands\n", max_commands);
-		}
+	// Max executions
+	max_commands = args.max_arg;
+	if (max_commands <= 0) {
+		printf("ERROR: invalid value \'int\' for -m/--max.\n\n");
+		
+	} else {
+		executed_commandsptr = &executed_commands;
+		printf("[INFO] nanoShell with terminate after %d commands\n", max_commands);
 	}
 
 	/*************************************************************
@@ -501,9 +472,10 @@ int main(int argc, char *argv[])
 			ERROR(NANO_ERROR_IO, "Error opening for writing!\n");
 		}
 
+		
 		pid_t pid = getpid();
 
-		/* 		char buffer[64];
+/* 		char buffer[64];
 		snprintf(buffer, sizeof(buffer), "kill -SIGINT %d\nkill -SIGUSR1 %d\nkill -SIGUSR2 %d", pid, pid, pid);
 		fwrite(buffer, 1, sizeof(buffer), fileptr);  */
 
@@ -512,43 +484,6 @@ int main(int argc, char *argv[])
 		fclose(fileptr);
 	}
 
-	/*************************************************************
-	 * 
-	 * FILE PARAMETER ARGUMENT CODE
-	 * 
-	 *************************************************************/
-	//TODO not running arguments, MISSING NULL
-	if (args.file_given)
-	{
-		FILE *fileptr;
-		char *lineptr = NULL;
-		size_t n = 0;
-		ssize_t result;
-
-		fileptr = fopen(args.file_arg, "r");
-		if (fileptr == NULL)
-		{
-			ERROR(NANO_ERROR_IO, "Error opening for reading!\n");
-		}
-
-		int i = 1;
-		printf("[INFO] Executing from file %s\n", args.file_arg);
-
-		while ((result = getline(&lineptr, &n, fileptr)) != -1)
-		{
-			if (lineptr[0] != 35 && lineptr[0] != 10 && lineptr[0] != 32 && lineptr[0] != 9)
-			{
-				printf("[command #%d]: %s\n", i, lineptr);
-				nano_exec_commands(lineptr);
-				i++;
-			}
-		
-		}
-
-		free(lineptr);
-		fclose(fileptr);
-		return 0;
-	}
 
 	/*************************************************************
 	 * 
@@ -571,6 +506,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	
 	/*************************************************************
 	 * 
 	 * SIGNAL HANDLER
@@ -611,8 +547,7 @@ int main(int argc, char *argv[])
 	 *************************************************************/
 	nano_loop();
 
-	if (args.max_arg && max_commands > 0)
-	{
+	if (max_commands > 0) {
 		printf("[INFO] nanoShell executed %d commands\n", executed_commands);
 	}
 	return C_EXIT_SUCCESS;
