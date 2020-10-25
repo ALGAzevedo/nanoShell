@@ -411,6 +411,9 @@ void nano_loop(void)
 
 		free(line);
 
+		// TODO -> Remover incrementador depois de resolver o problema do fork().
+		(*executed_commandsptr)++;
+
 		if (*executed_commandsptr == max_commands)
 		{				// verifying equal because of performance and we know we are incrementing +1 everytime
 			status = 1; // to stops the loop

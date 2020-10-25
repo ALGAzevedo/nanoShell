@@ -25,3 +25,38 @@ In this project, we created the **nanoShell** shell application that should be a
 - Alexandre Santos - 2181593
 
 *Advanced Programming - ESTG - IPL - 2020/2021*
+
+
+## To start nanoShell
+
+* run the following commands in the project directory
+
+    <code>make</code>
+
+* Then one of the following options:
+
+    <code>./nanoShell
+
+    ./nanoShell -f help.txt
+
+    ./nanoShell -m 5
+    
+    ./nanoShell -h
+    
+    ./nanoShell -s signal.txt
+    </code>
+
+
+## Help for nanoShell
+
+* Use simple commands without metachars and pipes and ' ". Ex:
+
+    <code>ps aux -l
+
+    ls
+
+    gcc -v
+    </code>
+
+* Use <code>bye</code> command to exit nanoShell
+
