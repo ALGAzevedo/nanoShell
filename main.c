@@ -440,7 +440,11 @@ int main(int argc, char *argv[])
 		ERROR(C_ERROR_PARSING_ARGS, "Invalid arguments. nanoShell can't start.");
 		exit(C_EXIT_FAILURE);
 	}
-	// Max executions
+	/*************************************************************
+	 * 
+	 * MAX COMMANDS ARGUMENT CODE
+	 * 
+	 *************************************************************/
 	if (args.max_given)
 	{
 		if (args.max_arg <= 0)
