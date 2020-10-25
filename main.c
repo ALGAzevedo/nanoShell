@@ -56,7 +56,6 @@ void nano_verify_terminate(char **args);
 int nano_verify_redirect(char **args, char **outputfile);
 void nano_sig_handler(int sig, siginfo_t *siginfo, void *context);
 
-
 /*****************************************************************
  * Function to handle the signals
  * 
@@ -108,7 +107,7 @@ void nano_sig_handler(int sig, siginfo_t *siginfo, void *context)
 			ERROR(NANO_ERROR_IO, "Error opening for writing!\n");
 		}
 
-/* 		char buffer[256];
+		/*		char buffer[256];
 		snprintf(buffer, sizeof(buffer),
 				 "\n%d execution(s) of applications\n%d execution(s) with STDOUT redir\n%d execution(s) with STDERR redir\n",
 				 *executed_commandsptr, count_stdout, count_stderr);
@@ -138,6 +137,7 @@ int nano_verify_redirect(char **args, char **outputfile)
 
 	for (int i = 0; args[i] != NULL; i++)
 	{
+		printf("%s\n", args[i]);
 		if ((strcmp(args[i], ">") == 0))
 		{
 			*outputfile = args[i + 1];
@@ -147,40 +147,40 @@ int nano_verify_redirect(char **args, char **outputfile)
 			//Increment STDOUT redir counter
 			count_stdout++;
 			return 1;
+		}
+		if ((strcmp(args[i], ">>") == 0))
+		{
+			*outputfile = args[i + 1];
 
-			if ((strcmp(args[i], ">>") == 0))
-			{
-				*outputfile = args[i + 1];
+			args[i] = NULL;
 
-				args[i] = NULL;
+			//Increment STDOUT redir counter
+			count_stdout++;
+			return 2;
+		}
+		if ((strcmp(args[i], "2>") == 0))
+		{
+			*outputfile = args[i + 1];
 
-				//Increment STDOUT redir counter
-				count_stdout++;
-				return 2;
-			}
-			if ((strcmp(args[i], "2>") == 0))
-			{
-				*outputfile = args[i + 1];
+			args[i] = NULL;
 
-				args[i] = NULL;
+			//Increment STDERR redir counter
+			count_stderr++;
+			return 3;
+		}
+		if ((strcmp(args[i], "2>>") == 0))
+		{
 
-				//Increment STDERR redir counter
-				count_stderr++;
-				return 3;
-			}
-			if ((strcmp(args[i], "2>>") == 0))
-			{
+			*outputfile = args[i + 1];
 
-				*outputfile = args[i + 1];
+			args[i] = NULL;
 
-				args[i] = NULL;
-
-				//Increment STDERR redir counter
-				count_stderr++;
-				return 4;
-			}
+			//Increment STDERR redir counter
+			count_stderr++;
+			return 4;
 		}
 	}
+
 	return -1;
 }
 
@@ -384,6 +384,7 @@ void nano_loop(void)
 						break;
 					}
 
+					
 					if (fp == NULL)
 					{
 						printf("[ERROR]Error opening file\n");
@@ -404,12 +405,13 @@ void nano_loop(void)
 		}
 
 		free(line);
-		
+
 		//Increment Commands counter
 		++(*executed_commandsptr);
 		//printf("[INFO] Comandos executados: %d\n", *executed_commandsptr);
-		if( *executed_commandsptr == max_commands) { 	// verifying equal because of performance and we know we are incrementing +1 everytime
-			status = 1;								// to stops the loop
+		if (*executed_commandsptr == max_commands)
+		{				// verifying equal because of performance and we know we are incrementing +1 everytime
+			status = 1; // to stops the loop
 		}
 
 	} while (status == 0);
@@ -435,10 +437,12 @@ int main(int argc, char *argv[])
 	}
 	// Max executions
 	max_commands = args.max_arg;
-	if (max_commands <= 0) {
+	if (max_commands <= 0)
+	{
 		printf("ERROR: invalid value \'int\' for -m/--max.\n\n");
-		
-	} else {
+	}
+	else
+	{
 		executed_commandsptr = &executed_commands;
 		printf("[INFO] nanoShell with terminate after %d commands\n", max_commands);
 	}
@@ -472,10 +476,9 @@ int main(int argc, char *argv[])
 			ERROR(NANO_ERROR_IO, "Error opening for writing!\n");
 		}
 
-		
 		pid_t pid = getpid();
 
-/* 		char buffer[64];
+		/* 		char buffer[64];
 		snprintf(buffer, sizeof(buffer), "kill -SIGINT %d\nkill -SIGUSR1 %d\nkill -SIGUSR2 %d", pid, pid, pid);
 		fwrite(buffer, 1, sizeof(buffer), fileptr);  */
 
@@ -483,7 +486,6 @@ int main(int argc, char *argv[])
 
 		fclose(fileptr);
 	}
-
 
 	/*************************************************************
 	 * 
@@ -506,7 +508,6 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	
 	/*************************************************************
 	 * 
 	 * SIGNAL HANDLER
@@ -547,7 +548,8 @@ int main(int argc, char *argv[])
 	 *************************************************************/
 	nano_loop();
 
-	if (max_commands > 0) {
+	if (max_commands > 0)
+	{
 		printf("[INFO] nanoShell executed %d commands\n", executed_commands);
 	}
 	return C_EXIT_SUCCESS;
