@@ -61,19 +61,30 @@ void nano_verify_terminate(char **args);
 int nano_verify_redirect(char **args, char **outputfile);
 void nano_sig_handler(int sig, siginfo_t *siginfo, void *context);
 
-//OLA BOM DIA FOI ISTO
 
-
-/*****************************************************************
- * Function to handle the signals
+/*******************************************************************************************************************
+ *Function nano_sig_handler
+ * ---------------------------------------------------------------------------------------------------------------
+ *  @brief Function to handle the signals received
  * 
- ****************************************************************/
+ * Possible signals:
+ * 					-SIGUSR1 - prints in stoud the starting date and time of the nanoShell
+ * 
+ * 					-SIGUSR2 - opens a file with the name the format "nanoShell_status_currentDate_currentHour.txt"
+ * 								and write in the file:	
+ * 														- number of executed commands
+ * 														- number of executed commands redirected to stdout
+ * 														- number of executed commands redirected to stderr
+ * 
+ * 					-SIGINT - Terminates the nanoShell printing the PID process that have sent the signal
+ * 
+ *******************************************************************************************************************/
 void nano_sig_handler(int sig, siginfo_t *siginfo, void *context)
 {
 	(void)context;
 	int aux;
 
-	/* Copia da variavel global errno */
+	/* Copy from global variable errno */
 	aux = errno;
 
 	if (sig == SIGUSR1)
@@ -82,6 +93,7 @@ void nano_sig_handler(int sig, siginfo_t *siginfo, void *context)
 		char buf[NANO_TIME_BUFSIZE] = {0};
 		strftime(buf, NANO_TIME_BUFSIZE, "\nnanoShell started at: %a %d %b %G - %T %z %Z", ptm);
 		printf("%s\n", buf);
+
 	}
 	else if (sig == SIGUSR2)
 	{
@@ -120,6 +132,7 @@ void nano_sig_handler(int sig, siginfo_t *siginfo, void *context)
 				counters.G_count_commands, counters.G_count_stdout, counters.G_count_stderr);
 
 		fclose(fileptr);
+
 	}
 	else if (sig == SIGINT)
 	{
@@ -132,10 +145,27 @@ void nano_sig_handler(int sig, siginfo_t *siginfo, void *context)
 	/* Restaura valor da variavel global errno */
 	errno = aux;
 }
-/*****************************************************************
- * Function to verify if its a redirect command
+
+
+/***************************************************************************
+ * Function nano_verify_redirect
+ * --------------------------------------------------------------------------
  * 
- ****************************************************************/
+ * @brief Function receives @param args with the inserted command and verifys
+ * 	if the command is a redirect command, saving the redirect destination to
+ * 	@param outputfile. The counters for the total executed commands, stdout 
+ * redirect commands and stderr redirect commands are also incremented here.
+ * 
+ * 
+ * @return Function returns an Int depending on the redirect:
+ * 
+ * 				-1 if it isnt a redirect command
+ * 				 1 if it is a stdout redirect to new or clean file
+ * 				 2 if it is a stdout redirect to append in file
+ * 				 3 if it is a stderr redirect to new or clean file
+ * 				 4 if it is a stderr redirect to append in file
+ * 
+ ****************************************************************************/
 int nano_verify_redirect(char **args, char **outputfile)
 {
 
@@ -199,11 +229,16 @@ int nano_verify_redirect(char **args, char **outputfile)
 	return -1;
 }
 
-/*****************************************************************
- * Function to verify termination of nanoShell
+/**********************************************************************************
+ * Function: nano_verify_terminate
+ * -----------------------------------------------------------------------------
+ * @brief Function receives the @param args with the separated tokens
+ * to verify if it was inserted the command "bye"to terminate the nanoShell.
+ * 
+ * 
  * 
  * @return Function returns nothing
- ****************************************************************/
+ *********************************************************************************/
 void nano_verify_terminate(char **args)
 {
 	size_t size = sizeof(args) / sizeof(char **);
@@ -218,19 +253,26 @@ void nano_verify_terminate(char **args)
 	}
 }
 
-/*****************************************************************
- * Function to verify unsupported characters
+
+/*******************************************************************************************************************
+ *Function nano_verify_char
+ * ---------------------------------------------------------------------------------------------------------------
+ *  @brief Function receives @param lineptr with the inserted command to verify if it was inserted any character
+ *  	that isnt supported. First verifys if there is a TAB, SPACE or % in the first char( @param lineptr[0] ), after 
+ *  	validates there isnt any of those it verifys the unsuported characters in the whole @param lineptr.
  * 
- * @return int value 0 for OK, -1 for NOT OK
+ * 	Unsuported characters: !, ", #, $, &, ', (, ), , , :, ;, <, =, ?, @, [, \, ], ^, `, {, |, }, ~
  * 
- ****************************************************************/
+ * 
+ * @return Function returns @param result with 0 if all characters are OK and -1 if one unsuported character is found
+ *******************************************************************************************************************/
 int nano_verify_char(char *lineptr)
 {
 	int res = 0;
 	size_t length = strlen(lineptr);
 	size_t i;
 
-	int verify[] = {33, 34, 35, 36, 38, 39, 40, 41, 42, 44, 58, 59, 60, 61, 63, 64, 91, 92, 93, 94, 96, 123, 124, 126};
+	int verify[] = {33, 34, 35, 36, 38, 39, 40, 41, 42, 44, 58, 59, 60, 61, 63, 64, 91, 92, 93, 94, 96, 123, 124, 125 , 126};
 
 	size_t verlength = sizeof(verify) / sizeof(verify[0]);
 
@@ -256,11 +298,16 @@ int nano_verify_char(char *lineptr)
 	return res;
 }
 
-/*****************************************************************
- * Function to verify pointers memory allocation
+
+/*******************************************************************************************************************
+ *Function nano_verify_pointer
+ * ---------------------------------------------------------------------------------------------------------------
+ *  @brief Function receives the pointer @param ptr to verify if the memory was allocated correctly.
+ *  	If the memory wasnt well allocated it sends and ERROR with a message		
  * 
- * @return Function does not return anything
- ****************************************************************/
+ * 
+ * @return Functions returns void
+ *******************************************************************************************************************/
 void nano_verify_pointer(char **ptr)
 {
 	if (ptr == NULL)
@@ -269,12 +316,18 @@ void nano_verify_pointer(char **ptr)
 	}
 }
 
-/*****************************************************************
- * Function to parse and split the given
- *  commands from liteprt into tokens
+
+/*******************************************************************************************************************
+ *Function nano_split_lineptr
+ * ---------------------------------------------------------------------------------------------------------------
+ *  @brief Function to parse and split the given string @param lineptr and split in different tokens separated by SPACE, 
+ * 		adding them to @param tokens and terminate each token with NULL. The last position of @param tokens is also set 
+ * 		to NULL so it can be later used in EXECVP.
+ * 	 
  * 
- * @return Function returns a pointer to a string array with the commands
- ****************************************************************/
+ * 
+ * @return Function returns a pointer to @param tokens with the necessary arguments for the EXECVP.
+ *******************************************************************************************************************/
 char **nano_split_lineptr(char *lineptr)
 {
 
@@ -307,11 +360,16 @@ char **nano_split_lineptr(char *lineptr)
 	return tokens;
 }
 
-/*****************************************************************
- * Function to read the command inserted in the shell
+
+/*******************************************************************************************************************
+ *Function nano_read_command
+ * ---------------------------------------------------------------------------------------------------------------
+ *  @brief Function reads the commmand inserted by the user using getline, and inserts the string terminator when it
+ * 		finds the \n.
  * 
- * @return Function returns a pointer to char with the command.
- ****************************************************************/
+ * 
+ * @return Function returns the string inserted by the user @param line
+ *******************************************************************************************************************/
 char *nano_read_command(char *line)
 {
 
@@ -334,11 +392,21 @@ char *nano_read_command(char *line)
 
 	return line;
 }
-/***************************************************************
- * FUNCTION TO PARSE VALIDADE AND EXECUTE COMMANDS
+
+
+/*******************************************************************************************************************
+ *Function nano_exec_commands
+ * ---------------------------------------------------------------------------------------------------------------
+ *  @brief Function receives @param lineptr with the inserted command by the user and makes the validations for
+ * 		unsupported characters, splits the string in tokens to be executed in EXECVP, verifys command for terminating
+ * 		nanoShell and verifys for a redirect command. After, it creates a children process to verify @param result for
+ * 		the possible redirect. If there is a redirect sets @param outputfile for the destination with the options 
+ * 		from the @param result. 
+ * 		If there isnt any error the function executes the command with EXECVP.
  * 
- * @return NULL
- ***************************************************************/
+ * 
+ * @return Function returns void
+ *******************************************************************************************************************/
 void nano_exec_commands(char *lineptr)
 {
 	char **args;
@@ -349,7 +417,7 @@ void nano_exec_commands(char *lineptr)
 		int res = nano_verify_char(lineptr);
 		if (res == -1)
 		{
-			printf("[ERROR] Wrong request ' %s\n", lineptr);
+			printf("[ERROR] Wrong request ' %s'\n", lineptr);
 		}
 		else
 		{
@@ -418,6 +486,19 @@ void nano_exec_commands(char *lineptr)
  * 
  * @return This function returns nothing
  **************************************************************/
+
+
+/*******************************************************************************************************************
+ *Function nano_loop
+ * ---------------------------------------------------------------------------------------------------------------
+ *  @brief Function starts the loop of the nanoShell. Calls nano_read_command to get the command from user 
+ * 		to @param lineptr and sends it to nano_exec_commands to be parsed and handled.
+ * 		If the nanoShell is started with -s option it also verifys if the given max executed commands were reached
+ * 		to terminate nanoShell changing @param status to 1.
+ * 
+ * 
+ * @return Function returns void
+ *******************************************************************************************************************/
 void nano_loop(void)
 {
 	char *lineptr;
@@ -433,17 +514,27 @@ void nano_loop(void)
 
 		free(line);
 
-		if (counters.G_count_commands == counters.G_max_commands) {
+		// If nanoShell is started with -s option
+		if (counters.G_max_commands > 0 && counters.G_count_commands == counters.G_max_commands) {
 			status = 1;
 		}
 
 	} while (status == 0);
 }
 
-/**
- * Main FUNCTION
+/*******************************************************************************************************************
+ *Function main
+ * ---------------------------------------------------------------------------------------------------------------
+ *  @brief Function main starts the commands counters from the @struct counters. 
+ * 		Function handles the options given when starting nanoShell:
+ * 				
+ * 				-s : Creates a file "signals.txt" with the complete possible signals to send to nanoShell
+ * 				-m : Terminates after a given int value of commands.
+ * 				-f : Reads from a given file to execute commands.
  * 
- */
+ * 
+ * @return Function returns a int value depending on the event. 0 if OK.
+ *******************************************************************************************************************/
 int main(int argc, char *argv[])
 {
 	/* Disable warnings */
@@ -453,7 +544,6 @@ int main(int argc, char *argv[])
 	counters.G_count_commands = 0;
 	counters.G_count_stderr = 0;
 	counters.G_count_stdout = 0;
-	counters.G_max_commands = 0;
 
 	struct gengetopt_args_info args;
 
@@ -463,11 +553,14 @@ int main(int argc, char *argv[])
 		exit(C_EXIT_FAILURE);
 	}
 
-	/*************************************************************
+	
+	/*******************************************************************************************************************
+	 *Max executions option: -m {int}
+	 * ---------------------------------------------------------------------------------------------------------------
+	 *  @brief If option is given with a int value > 0 it starts the @struct counters @param G_max_commands with the
+	 *	the given value and informs the user.
 	 * 
-	 * MAX EXECUTIONS ARGUMENT CODE
-	 * 
-	 *************************************************************/
+	 *******************************************************************************************************************/
 	if (args.max_given)
 	{
 		if (args.max_arg <= 0)
@@ -481,11 +574,14 @@ int main(int argc, char *argv[])
 			printf("[INFO] nanoShell with terminate after %d commands\n", counters.G_max_commands);
 		}
 	}
-	/*************************************************************
+
+	/*******************************************************************************************************************
+	 *Help option: -h
+	 * ---------------------------------------------------------------------------------------------------------------
 	 * 
-	 * HELP ARGUMENT CODE
+	 *  @brief If nanoShell is started with option -h it shows the user some help regarding the nanoShell
 	 * 
-	 *************************************************************/
+	 *******************************************************************************************************************/
 	if (args.no_help_given)
 	{
 		printf("HELP FOR NANOSHELL\n\n");
@@ -494,11 +590,16 @@ int main(int argc, char *argv[])
 		printf("André Azevedo - 2182634\nAlexandre Santos - 2181593\n\n");
 	}
 
-	/*************************************************************
+	/*******************************************************************************************************************
+	 *Signals option: -s
+	 * ---------------------------------------------------------------------------------------------------------------
 	 * 
-	 * SIGNALS FILE ARGUMENT CODE
+	 *  @brief If nanoShell is started with option -s it creates a @file named "signals.txt" with the commands to send
+	 * 		signals to nanoShell. 
+	 * 		Example: kill -SIGINT {nanoShell PID}	
+	 * 		
 	 * 
-	 *************************************************************/
+	 *******************************************************************************************************************/
 	if (args.signalfile_given)
 	{
 
@@ -512,20 +613,22 @@ int main(int argc, char *argv[])
 
 		pid_t pid = getpid();
 
-		/* 		char buffer[64];
-		snprintf(buffer, sizeof(buffer), "kill -SIGINT %d\nkill -SIGUSR1 %d\nkill -SIGUSR2 %d", pid, pid, pid);
-		fwrite(buffer, 1, sizeof(buffer), fileptr);  */
 
 		fprintf(fileptr, "kill -SIGINT %d\nkill -SIGUSR1 %d\nkill -SIGUSR2 %d", pid, pid, pid);
 
 		fclose(fileptr);
 	}
 
-	/*************************************************************
+	/*******************************************************************************************************************
+	 *File option: -f {file_directory/name}
+	 * ---------------------------------------------------------------------------------------------------------------
 	 * 
-	 * FILE PARAMETER ARGUMENT CODE
+	 *  @brief If nanoShell is started with option -f it opens the given file to read every line and execute possible
+	 * 		commands from the file.
+	 * 		If the line starts with #, [LINE FEED], [SPACE] or [HORIZONTAL TAB] it is ignored.
+	 * 		nanoShell is terminated after reading all the lines.
 	 * 
-	 *************************************************************/
+	 *******************************************************************************************************************/
 	if (args.file_given)
 	{
 		FILE *fileptr;
@@ -544,6 +647,7 @@ int main(int argc, char *argv[])
 
 		while ((result = getline(&lineptr, &n, fileptr)) != -1)
 		{
+			//Verifys for #, [LINE FEED], [SPACE], [HORIZONTAL TAB] to ignore line
 			if (lineptr[0] != 35 && lineptr[0] != 10 && lineptr[0] != 32 && lineptr[0] != 9)
 			{
 				lineptr[strcspn(lineptr, "\n")] = 0;
@@ -586,25 +690,25 @@ int main(int argc, char *argv[])
 	 *************************************************************/
 	struct sigaction act;
 
-	/* Definir a rotina de resposta a sinais */
+	/* Defines routine to handle signals */
 	act.sa_sigaction = nano_sig_handler;
 
-	/* mascara sem sinais -- nao bloqueia os sinais */
+	/* empty signals mask -- dont block signals */
 	sigemptyset(&act.sa_mask);
 
-	act.sa_flags = SA_SIGINFO;	/*info adicional sobre o sinal */
-	act.sa_flags |= SA_RESTART; /*recupera chamadas bloqueantes*/
+	act.sa_flags = SA_SIGINFO;	/*Adicional info about signals */
+	act.sa_flags |= SA_RESTART; /*recovers from blocking calls*/
 
-	/* Captura do sinal SIGUSR1 */
+	/* Captures signal SIGUSR1 */
 	if (sigaction(SIGUSR1, &act, NULL) < 0)
 	{
 		ERROR(NANO_ERROR_SIGACTION, "sigaction - SIGUSR1");
 	}
-	/* Captura do sinal SIGUSR2 */
+	/* Captures signal SIGUSR2 */
 	if (sigaction(SIGUSR2, &act, NULL) < 0)
 	{
 		ERROR(NANO_ERROR_SIGACTION, "sigaction - SIGUSR2");
-	} /* Captura do sinal SIGUSR1 */
+	} /* Captures signal SIGUSR1 */
 	if (sigaction(SIGINT, &act, NULL) < 0)
 	{
 		ERROR(NANO_ERROR_SIGACTION, "sigaction - SIGINT");
