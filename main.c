@@ -36,19 +36,19 @@
 #define NANO_ERROR_FORK 6
 #define NANO_ERROR_EXECVP 7
 #define NANO_ERROR_SIGACTION 8
+#define NANO_MAX_INVALID 9
 
 // DEFINE GLOBAL VARIABLES
 int status = 0; // Status for terminating nanoShell
 struct tm *ptm;
 struct tm *current;
 
-struct NanoCounters
-{
+struct NanoCounters {
 	unsigned int G_count_stdout;
 	unsigned int G_count_stderr;
 	unsigned int G_max_commands;
 	unsigned int G_count_commands;
-}counters;
+} counters;
 
 
 // FUNCTIONS DECLARATION
@@ -195,10 +195,7 @@ int nano_verify_redirect(char **args, char **outputfile)
 			return 4;
 		}
 	}
-	//Increment Commands counter
 	counters.G_count_commands++;
-	
-	
 	return -1;
 }
 
@@ -436,6 +433,9 @@ void nano_loop(void)
 
 		free(line);
 
+		if (counters.G_count_commands == counters.G_max_commands) {
+			status = 1;
+		}
 
 	} while (status == 0);
 }
@@ -473,12 +473,11 @@ int main(int argc, char *argv[])
 		if (args.max_arg <= 0)
 		{
 			printf("ERROR: invalid value \'int\' for -m/--max.\n\n");
-			// PERGUNTAR AO PROF: DEVE TERMINAR A SHELL?
+			exit(NANO_MAX_INVALID);
 		}
 		else
 		{
 			counters.G_max_commands = args.max_arg;
-			//executed_commandsptr = &executed_commands;
 			printf("[INFO] nanoShell with terminate after %d commands\n", counters.G_max_commands);
 		}
 	}
@@ -527,7 +526,6 @@ int main(int argc, char *argv[])
 	 * FILE PARAMETER ARGUMENT CODE
 	 * 
 	 *************************************************************/
-	//TODO not running arguments, MISSING NULL
 	if (args.file_given)
 	{
 		FILE *fileptr;
@@ -612,7 +610,6 @@ int main(int argc, char *argv[])
 		ERROR(NANO_ERROR_SIGACTION, "sigaction - SIGINT");
 	}
 
-	//TODO file parameter
 
 	/*************************************************************
 	 * 
