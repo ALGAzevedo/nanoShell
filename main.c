@@ -61,6 +61,9 @@ void nano_verify_terminate(char **args);
 int nano_verify_redirect(char **args, char **outputfile);
 void nano_sig_handler(int sig, siginfo_t *siginfo, void *context);
 
+//OLA BOM DIA FOI ISTO
+
+
 /*****************************************************************
  * Function to handle the signals
  * 
@@ -75,6 +78,7 @@ void nano_sig_handler(int sig, siginfo_t *siginfo, void *context)
 
 	if (sig == SIGUSR1)
 	{
+
 		char buf[NANO_TIME_BUFSIZE] = {0};
 		strftime(buf, NANO_TIME_BUFSIZE, "\nnanoShell started at: %a %d %b %G - %T %z %Z", ptm);
 		printf("%s\n", buf);
@@ -191,12 +195,10 @@ int nano_verify_redirect(char **args, char **outputfile)
 			return 4;
 		}
 	}
-	counters.G_count_commands++;
 	//Increment Commands counter
-	//(*executed_commandsptr)++;
-	// PERGUNTAR AO PROF: Como fazer update ao ponteiro dentro do fork()?
-	//printf("[INFO] Comandos executados: %d\n", *executed_commandsptr);
-
+	counters.G_count_commands++;
+	
+	
 	return -1;
 }
 
@@ -433,6 +435,7 @@ void nano_loop(void)
 		nano_exec_commands(lineptr);
 
 		free(line);
+
 
 	} while (status == 0);
 }
