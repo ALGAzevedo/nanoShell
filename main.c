@@ -41,10 +41,15 @@
 int status = 0; // Status for terminating nanoShell
 struct tm *ptm;
 struct tm *current;
-unsigned int count_stdout = 0;
-unsigned int count_stderr = 0;
-unsigned int max_commands = 0;
-unsigned int *executed_commandsptr;
+
+struct NanoCounters
+{
+	unsigned int G_count_stdout;
+	unsigned int G_count_stderr;
+	unsigned int G_max_commands;
+	unsigned int G_count_commands;
+}counters;
+
 
 // FUNCTIONS DECLARATION
 char *nano_read_command(char *line);
@@ -107,14 +112,9 @@ void nano_sig_handler(int sig, siginfo_t *siginfo, void *context)
 			ERROR(NANO_ERROR_IO, "Error opening for writing!\n");
 		}
 
-		/* 		char buffer[256];
-		snprintf(buffer, sizeof(buffer),
-				 "\n%d execution(s) of applications\n%d execution(s) with STDOUT redir\n%d execution(s) with STDERR redir\n",
-				 count_commands, count_stdout, count_stderr);
-		fwrite(buffer, 1, sizeof(bufer), fileptr); */
+		fprintf(fileptr, "%u execution(s) of applications\n%u execution(s) with STDOUT redir\n%u execution(s) with STDERR redir\n",
+				counters.G_count_commands, counters.G_count_stdout, counters.G_count_stderr);
 
-		fprintf(fileptr, "%d execution(s) of applications\n%d execution(s) with STDOUT redir\n%d execution(s) with STDERR redir\n",
-				*executed_commandsptr, count_stdout, count_stderr);
 		fclose(fileptr);
 	}
 	else if (sig == SIGINT)
@@ -144,7 +144,10 @@ int nano_verify_redirect(char **args, char **outputfile)
 			args[i] = NULL;
 
 			//Increment STDOUT redir counter
-			count_stdout++;
+			counters.G_count_stdout++;
+			//Increment Total commands executed
+			counters.G_count_commands++;
+
 			return 1;
 		}
 		if ((strcmp(args[i], ">>") == 0))
@@ -154,7 +157,10 @@ int nano_verify_redirect(char **args, char **outputfile)
 			args[i] = NULL;
 
 			//Increment STDOUT redir counter
-			count_stdout++;
+			counters.G_count_stdout++;
+			//Increment Total commands executed
+			counters.G_count_commands++;
+
 			return 2;
 		}
 		if ((strcmp(args[i], "2>") == 0))
@@ -164,7 +170,10 @@ int nano_verify_redirect(char **args, char **outputfile)
 			args[i] = NULL;
 
 			//Increment STDERR redir counter
-			count_stderr++;
+			counters.G_count_stderr++;
+			//Increment Total commands executed
+			counters.G_count_commands++;
+
 			return 3;
 		}
 		if ((strcmp(args[i], "2>>") == 0))
@@ -175,11 +184,14 @@ int nano_verify_redirect(char **args, char **outputfile)
 			args[i] = NULL;
 
 			//Increment STDERR redir counter
-			count_stderr++;
+			counters.G_count_stderr++;
+			//Increment Total commands executed
+			counters.G_count_commands++;
+
 			return 4;
 		}
 	}
-	
+	counters.G_count_commands++;
 	//Increment Commands counter
 	//(*executed_commandsptr)++;
 	// PERGUNTAR AO PROF: Como fazer update ao ponteiro dentro do fork()?
@@ -349,6 +361,9 @@ void nano_exec_commands(char *lineptr)
 
 			nano_verify_terminate(args);
 
+			/* Verify if it is a redirect command */
+			result = nano_verify_redirect(args, &outputfile);
+
 			pid_t pid = fork();
 			if (pid == -1)
 			{
@@ -357,9 +372,6 @@ void nano_exec_commands(char *lineptr)
 			else if (pid == 0)
 			{
 				FILE *fp;
-
-				/* Verify if it is a redirect command */
-				result = nano_verify_redirect(args, &outputfile);
 
 				switch (result)
 				{
@@ -434,7 +446,11 @@ int main(int argc, char *argv[])
 	/* Disable warnings */
 	(void)argc;
 	(void)argv;
-	unsigned int executed_commands = 0;
+
+	counters.G_count_commands = 0;
+	counters.G_count_stderr = 0;
+	counters.G_count_stdout = 0;
+	counters.G_max_commands = 0;
 
 	struct gengetopt_args_info args;
 
@@ -458,9 +474,9 @@ int main(int argc, char *argv[])
 		}
 		else
 		{
-			max_commands = args.max_arg;
-			executed_commandsptr = &executed_commands;
-			printf("[INFO] nanoShell with terminate after %d commands\n", max_commands);
+			counters.G_max_commands = args.max_arg;
+			//executed_commandsptr = &executed_commands;
+			printf("[INFO] nanoShell with terminate after %d commands\n", counters.G_max_commands);
 		}
 	}
 	/*************************************************************
@@ -602,9 +618,9 @@ int main(int argc, char *argv[])
 	 *************************************************************/
 	nano_loop();
 
-	if (args.max_arg && max_commands > 0)
+	if (args.max_arg && counters.G_max_commands > 0)
 	{
-		printf("[INFO] nanoShell executed %d commands\n", executed_commands);
+		printf("[INFO] nanoShell executed %d commands\n", counters.G_count_commands);
 	}
 
 	return C_EXIT_SUCCESS;
