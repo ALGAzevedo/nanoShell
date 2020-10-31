@@ -1,16 +1,34 @@
-HELP FOR NANOSHELL
+nanoShell, version 1.0.0 -> November 2020
+Authors: Alexandre Santos (2181593) & André Azevedo (2182634)
 
-# Use simple commands without metachars and pipes and ' "
+    Description:
 
-    Ex: ps aux -l
+In informatics, a shell is an application that receives and interprets commands, like the BASH, ZSH or CSH.
+In this project, we created the **nanoShell** shell application that should be able to:
+    1) Execute an application with multiple input parameters
+    2) Capture signal sent for the nanoShell
+    3) Support standard output redirects (**>** and **>>**) and standard errors (**2>** e **2>>**)
+    4) Show a help summary
 
-# Use bye command to exit nanoShell
+    Options:
+
+    -f          file            - run a list of commands in a file (filename argument). Each line should be a command
+    -h          help            - shows a brief summary of options and arguments of each available option
+    -m          max             - define the maximum number of commands the nanoShell should execute before terminating
+    -s          signal file     - creates a "signal.txt" file with all available commands that can send signals to the nanoShell.
+
+    Arguments:
+
+    -f, --file <fich>
+    -h, --help
+    -m, --max <int>
+    -s, --signalfile
+
+    Exit Status:
+    
+    Returns success unless PATTERN is not found or an invalid option is given.
 
 
 
 
-Authors:
-
-André Azevedo - 2182634
-Alexandre Santos - 2181593
-
+# Reference: https://www.geeksforgeeks.org/help-command-in-linux-with-examples/ #
