@@ -64,7 +64,7 @@ void nano_sig_handler(int sig, siginfo_t *siginfo, void *context);
 
 /*******************************************************************************************************************
  *Function nano_sig_handler
- * ---------------------------------------------------------------------------------------------------------------
+ * ----------------------------------------------------------------------------------------------------------------
  *  @brief Function to handle the signals received
  * 
  * Possible signals:
@@ -147,9 +147,9 @@ void nano_sig_handler(int sig, siginfo_t *siginfo, void *context)
 }
 
 
-/***************************************************************************
+/*******************************************************************************************************************
  * Function nano_verify_redirect
- * --------------------------------------------------------------------------
+ * ----------------------------------------------------------------------------------------------------------------
  * 
  * @brief Function receives @param args with the inserted command and verifys
  * 	if the command is a redirect command, saving the redirect destination to
@@ -165,7 +165,7 @@ void nano_sig_handler(int sig, siginfo_t *siginfo, void *context)
  * 				 3 if it is a stderr redirect to new or clean file
  * 				 4 if it is a stderr redirect to append in file
  * 
- ****************************************************************************/
+ *******************************************************************************************************************/
 int nano_verify_redirect(char **args, char **outputfile)
 {
 
@@ -229,16 +229,16 @@ int nano_verify_redirect(char **args, char **outputfile)
 	return -1;
 }
 
-/**********************************************************************************
+/*******************************************************************************************************************
  * Function: nano_verify_terminate
- * -----------------------------------------------------------------------------
+ *  ----------------------------------------------------------------------------------------------------------------
  * @brief Function receives the @param args with the separated tokens
  * to verify if it was inserted the command "bye"to terminate the nanoShell.
  * 
  * 
  * 
  * @return Function returns nothing
- *********************************************************************************/
+ *******************************************************************************************************************/
 void nano_verify_terminate(char **args)
 {
 	size_t size = sizeof(args) / sizeof(char **);
@@ -480,13 +480,6 @@ void nano_exec_commands(char *lineptr)
 		}
 	}
 }
-
-/***************************************************************
- * Function to start loop of the nanoShell
- * 
- * @return This function returns nothing
- **************************************************************/
-
 
 /*******************************************************************************************************************
  *Function nano_loop
