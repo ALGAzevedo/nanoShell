@@ -584,10 +584,29 @@ int main(int argc, char *argv[])
 	 *******************************************************************************************************************/
 	if (args.no_help_given)
 	{
-		printf("HELP FOR NANOSHELL\n\n");
-		printf("#Use simple commands without metachars and pipes \n Ex: ps aux -l \n\n");
-		printf("#Use bye command to exit nanoShell\n\n\nAuthors:\n");
-		printf("André Azevedo - 2182634\nAlexandre Santos - 2181593\n\n");
+
+		printf("\nnanoShell, version 1.0.0 -> November 2020\n");
+		printf("Authors: Alexandre Santos (2181593) & André Azevedo (2182634)\n");
+
+		
+		printf("\v\t# Use simple commands without metachars and pipes (ex: ps aux -l)\n");
+		printf("\t# Use bye command to exit nanoShell\n");
+
+		printf("\vOptions:\n");
+		
+		printf("\v  -f \t\tfile \t\t- run a list of commands in a file (filename argument). Each line should be a command\n");
+		printf("  -h \t\thelp \t\t- shows a brief summary of options and arguments of each available option\n");
+		printf("  -m \t\tmax \t\t- define the maximum number of commands the nanoShell should execute before terminating\n");
+		printf("  -s \t\tsignal file \t- creates a 'signal.txt' file with all available commands that can send signals to the nanoShell.\n");
+
+		printf("\vArguments:\n");
+
+		printf("\v  -f, --file <fich>\n");
+		printf("  -h, --help\n");
+		printf("  -m, --max <int>\n");
+		printf("  -s, --signalfile\n\n");
+
+		return C_EXIT_SUCCESS;
 	}
 
 	/*******************************************************************************************************************
@@ -610,9 +629,7 @@ int main(int argc, char *argv[])
 		{
 			ERROR(NANO_ERROR_IO, "Error opening for writing!\n");
 		}
-
 		pid_t pid = getpid();
-
 
 		fprintf(fileptr, "kill -SIGINT %d\nkill -SIGUSR1 %d\nkill -SIGUSR2 %d", pid, pid, pid);
 
@@ -659,7 +676,7 @@ int main(int argc, char *argv[])
 
 		free(lineptr);
 		fclose(fileptr);
-		return 0;
+		return C_EXIT_SUCCESS;
 	}
 
 	/*************************************************************
