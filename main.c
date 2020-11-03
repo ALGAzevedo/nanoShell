@@ -52,23 +52,24 @@ struct NanoCounters {
 
 
 // FUNCTIONS DECLARATION
-char *nano_read_command(char *line);
-char **nano_split_lineptr(char *lineptr);
-void nano_verify_pointer(char **ptr);
-void nano_exec_commands(char *lineptr);
-int nano_verify_char(char *lineptr);
-void nano_verify_terminate(char **args);
-int nano_verify_redirect(char **args, char **outputfile);
 void nano_sig_handler(int sig, siginfo_t *siginfo, void *context);
+int nano_verify_redirect(char **args, char **outputfile);
+void nano_verify_terminate(char **args);
+int nano_verify_char(char *lineptr);
+void nano_verify_pointer(char **ptr);
+char **nano_split_lineptr(char *lineptr);
+char *nano_read_command(char *line);
+void nano_exec_commands(char *lineptr);
+void nano_loop(void);
 
 
 /*******************************************************************************************************************
- *Function nano_sig_handler
+ * Function nano_sig_handler
  * ----------------------------------------------------------------------------------------------------------------
  *  @brief Function to handle the signals received
  * 
  * Possible signals:
- * 					-SIGUSR1 - prints in stoud the starting date and time of the nanoShell
+ * 					-SIGUSR1 - prints in stout the starting date and time of the nanoShell
  * 
  * 					-SIGUSR2 - opens a file with the name the format "nanoShell_status_currentDate_currentHour.txt"
  * 								and write in the file:	
@@ -150,16 +151,14 @@ void nano_sig_handler(int sig, siginfo_t *siginfo, void *context)
 /*******************************************************************************************************************
  * Function nano_verify_redirect
  * ----------------------------------------------------------------------------------------------------------------
- * 
- * @brief Function receives @param args with the inserted command and verifys
+ * @brief Function receives @param args with the inserted command and verifies
  * 	if the command is a redirect command, saving the redirect destination to
- * 	@param outputfile. The counters for the total executed commands, stdout 
+ * 	@param outputfile. Then counters for the total executed commands, stdout 
  * redirect commands and stderr redirect commands are also incremented here.
- * 
  * 
  * @return Function returns an Int depending on the redirect:
  * 
- * 				-1 if it isnt a redirect command
+ * 				-1 if it isn't a redirect command
  * 				 1 if it is a stdout redirect to new or clean file
  * 				 2 if it is a stdout redirect to append in file
  * 				 3 if it is a stderr redirect to new or clean file
@@ -235,8 +234,6 @@ int nano_verify_redirect(char **args, char **outputfile)
  * @brief Function receives the @param args with the separated tokens
  * to verify if it was inserted the command "bye"to terminate the nanoShell.
  * 
- * 
- * 
  * @return Function returns nothing
  *******************************************************************************************************************/
 void nano_verify_terminate(char **args)
@@ -255,16 +252,15 @@ void nano_verify_terminate(char **args)
 
 
 /*******************************************************************************************************************
- *Function nano_verify_char
+ * Function nano_verify_char
  * ---------------------------------------------------------------------------------------------------------------
  *  @brief Function receives @param lineptr with the inserted command to verify if it was inserted any character
- *  	that isnt supported. First verifys if there is a TAB, SPACE or % in the first char( @param lineptr[0] ), after 
- *  	validates there isnt any of those it verifys the unsuported characters in the whole @param lineptr.
+ *  	that isn't supported. First verifies if there is a TAB, SPACE or % in the first char( @param lineptr[0] ), after 
+ *  	validates there isn't any of those it verifies the unsupported characters in the whole @param lineptr.
  * 
- * 	Unsuported characters: !, ", #, $, &, ', (, ), , , :, ;, <, =, ?, @, [, \, ], ^, `, {, |, }, ~
+ * 	Unsupported characters: !, ", #, $, &, ', (, ), , , :, ;, <, =, ?, @, [, \, ], ^, `, {, |, }, ~
  * 
- * 
- * @return Function returns @param result with 0 if all characters are OK and -1 if one unsuported character is found
+ * @return Function returns @param result with 0 if all characters are OK and -1 if one unsupported character is found
  *******************************************************************************************************************/
 int nano_verify_char(char *lineptr)
 {
@@ -300,11 +296,10 @@ int nano_verify_char(char *lineptr)
 
 
 /*******************************************************************************************************************
- *Function nano_verify_pointer
+ * Function nano_verify_pointer
  * ---------------------------------------------------------------------------------------------------------------
  *  @brief Function receives the pointer @param ptr to verify if the memory was allocated correctly.
- *  	If the memory wasnt well allocated it sends and ERROR with a message		
- * 
+ *  	If the memory wasn't well allocated it sends and ERROR with a message	
  * 
  * @return Functions returns void
  *******************************************************************************************************************/
@@ -312,19 +307,17 @@ void nano_verify_pointer(char **ptr)
 {
 	if (ptr == NULL)
 	{
-		ERROR(NANO_ERROR_MALLOC, "[ERROR]Memory Allocation Failed\n");
+		ERROR(NANO_ERROR_MALLOC, "[ERROR] Memory Allocation Failed\n");
 	}
 }
 
 
 /*******************************************************************************************************************
- *Function nano_split_lineptr
+ * Function nano_split_lineptr
  * ---------------------------------------------------------------------------------------------------------------
  *  @brief Function to parse and split the given string @param lineptr and split in different tokens separated by SPACE, 
  * 		adding them to @param tokens and terminate each token with NULL. The last position of @param tokens is also set 
  * 		to NULL so it can be later used in EXECVP.
- * 	 
- * 
  * 
  * @return Function returns a pointer to @param tokens with the necessary arguments for the EXECVP.
  *******************************************************************************************************************/
@@ -362,11 +355,10 @@ char **nano_split_lineptr(char *lineptr)
 
 
 /*******************************************************************************************************************
- *Function nano_read_command
+ * Function nano_read_command
  * ---------------------------------------------------------------------------------------------------------------
- *  @brief Function reads the commmand inserted by the user using getline, and inserts the string terminator when it
+ *  @brief Function reads the command inserted by the user using getline, and inserts the string terminator when it
  * 		finds the \n.
- * 
  * 
  * @return Function returns the string inserted by the user @param line
  *******************************************************************************************************************/
@@ -395,15 +387,14 @@ char *nano_read_command(char *line)
 
 
 /*******************************************************************************************************************
- *Function nano_exec_commands
+ * Function nano_exec_commands
  * ---------------------------------------------------------------------------------------------------------------
  *  @brief Function receives @param lineptr with the inserted command by the user and makes the validations for
- * 		unsupported characters, splits the string in tokens to be executed in EXECVP, verifys command for terminating
- * 		nanoShell and verifys for a redirect command. After, it creates a children process to verify @param result for
+ * 		unsupported characters, splits the string in tokens to be executed in EXECVP, verifies command for terminating
+ * 		nanoShell and verifies for a redirect command. After, it creates a children process to verify @param result for
  * 		the possible redirect. If there is a redirect sets @param outputfile for the destination with the options 
  * 		from the @param result. 
- * 		If there isnt any error the function executes the command with EXECVP.
- * 
+ * 		If there isn't any error the function executes the command with EXECVP.
  * 
  * @return Function returns void
  *******************************************************************************************************************/
@@ -482,13 +473,12 @@ void nano_exec_commands(char *lineptr)
 }
 
 /*******************************************************************************************************************
- *Function nano_loop
+ * Function nano_loop
  * ---------------------------------------------------------------------------------------------------------------
  *  @brief Function starts the loop of the nanoShell. Calls nano_read_command to get the command from user 
  * 		to @param lineptr and sends it to nano_exec_commands to be parsed and handled.
- * 		If the nanoShell is started with -s option it also verifys if the given max executed commands were reached
+ * 		If the nanoShell is started with -m option it also verifies if the given max executed commands were reached
  * 		to terminate nanoShell changing @param status to 1.
- * 
  * 
  * @return Function returns void
  *******************************************************************************************************************/
@@ -507,7 +497,7 @@ void nano_loop(void)
 
 		free(line);
 
-		// If nanoShell is started with -s option
+		// If nanoShell is started with -m option
 		if (counters.G_max_commands > 0 && counters.G_count_commands == counters.G_max_commands) {
 			status = 1;
 		}
@@ -516,7 +506,7 @@ void nano_loop(void)
 }
 
 /*******************************************************************************************************************
- *Function main
+ * Function main
  * ---------------------------------------------------------------------------------------------------------------
  *  @brief Function main starts the commands counters from the @struct counters. 
  * 		Function handles the options given when starting nanoShell:
@@ -546,32 +536,9 @@ int main(int argc, char *argv[])
 		exit(C_EXIT_FAILURE);
 	}
 
-	
 	/*******************************************************************************************************************
-	 *Max executions option: -m {int}
+	 * Help option: -h
 	 * ---------------------------------------------------------------------------------------------------------------
-	 *  @brief If option is given with a int value > 0 it starts the @struct counters @param G_max_commands with the
-	 *	the given value and informs the user.
-	 * 
-	 *******************************************************************************************************************/
-	if (args.max_given)
-	{
-		if (args.max_arg <= 0)
-		{
-			printf("ERROR: invalid value \'int\' for -m/--max.\n\n");
-			exit(NANO_MAX_INVALID);
-		}
-		else
-		{
-			counters.G_max_commands = args.max_arg;
-			printf("[INFO] nanoShell with terminate after %d commands\n", counters.G_max_commands);
-		}
-	}
-
-	/*******************************************************************************************************************
-	 *Help option: -h
-	 * ---------------------------------------------------------------------------------------------------------------
-	 * 
 	 *  @brief If nanoShell is started with option -h it shows the user some help regarding the nanoShell
 	 * 
 	 *******************************************************************************************************************/
@@ -601,15 +568,34 @@ int main(int argc, char *argv[])
 
 		return C_EXIT_SUCCESS;
 	}
+	
+	/*******************************************************************************************************************
+	 * Max executions option: -m {int}
+	 * ---------------------------------------------------------------------------------------------------------------
+	 *  @brief If option is given with a int value > 0 it starts the @struct counters @param G_max_commands with the
+	 *	the given value and informs the user.
+	 * 
+	 *******************************************************************************************************************/
+	if (args.max_given)
+	{
+		if (args.max_arg <= 0)
+		{
+			printf("[ERROR] Invalid value \'int\' for -m.\n\n");
+			exit(NANO_MAX_INVALID);
+		}
+		else
+		{
+			counters.G_max_commands = args.max_arg;
+			printf("[INFO] nanoShell with terminate after %d commands\n", counters.G_max_commands);
+		}
+	}
 
 	/*******************************************************************************************************************
-	 *Signals option: -s
+	 * Signals option: -s
 	 * ---------------------------------------------------------------------------------------------------------------
-	 * 
 	 *  @brief If nanoShell is started with option -s it creates a @file named "signals.txt" with the commands to send
 	 * 		signals to nanoShell. 
 	 * 		Example: kill -SIGINT {nanoShell PID}	
-	 * 		
 	 * 
 	 *******************************************************************************************************************/
 	if (args.signalfile_given)
@@ -630,9 +616,8 @@ int main(int argc, char *argv[])
 	}
 
 	/*******************************************************************************************************************
-	 *File option: -f {file_directory/name}
+	 * File option: -f {file_directory/name}
 	 * ---------------------------------------------------------------------------------------------------------------
-	 * 
 	 *  @brief If nanoShell is started with option -f it opens the given file to read every line and execute possible
 	 * 		commands from the file.
 	 * 		If the line starts with #, [LINE FEED], [SPACE] or [HORIZONTAL TAB] it is ignored.
@@ -657,7 +642,7 @@ int main(int argc, char *argv[])
 
 		while ((result = getline(&lineptr, &n, fileptr)) != -1)
 		{
-			//Verifys for #, [LINE FEED], [SPACE], [HORIZONTAL TAB] to ignore line
+			//Verifies for #, [LINE FEED], [SPACE], [HORIZONTAL TAB] to ignore line
 			if (lineptr[0] != 35 && lineptr[0] != 10 && lineptr[0] != 32 && lineptr[0] != 9)
 			{
 				lineptr[strcspn(lineptr, "\n")] = 0;
@@ -673,7 +658,6 @@ int main(int argc, char *argv[])
 	}
 
 	/*************************************************************
-	 * 
 	 * SAVE TIMESTAMP FOR NANOSHELL STARTUP
 	 * 
 	 *************************************************************/
@@ -694,7 +678,6 @@ int main(int argc, char *argv[])
 	}
 
 	/*************************************************************
-	 * 
 	 * SIGNAL HANDLER
 	 * 
 	 *************************************************************/
@@ -706,7 +689,7 @@ int main(int argc, char *argv[])
 	/* empty signals mask -- dont block signals */
 	sigemptyset(&act.sa_mask);
 
-	act.sa_flags = SA_SIGINFO;	/*Adicional info about signals */
+	act.sa_flags = SA_SIGINFO;	/*Additional info about signals */
 	act.sa_flags |= SA_RESTART; /*recovers from blocking calls*/
 
 	/* Captures signal SIGUSR1 */
@@ -726,7 +709,6 @@ int main(int argc, char *argv[])
 
 
 	/*************************************************************
-	 * 
 	 * MAIN LOOP
 	 * 
 	 *************************************************************/
