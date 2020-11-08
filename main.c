@@ -2,8 +2,8 @@
 * @file main.c
 * @brief Nano Shell code
 * @date 2020-10-10
-* @author André Azevedo 2182634
-* @author Alexandre Santos - 2181593
+* @author 2181593 – Alexandre Jorge Casaleiro dos Santos
+* @author 2182634 - André Luís Gil De Azevedo
 */
 
 #define _GNU_SOURCE
